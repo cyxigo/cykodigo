@@ -7,10 +7,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// load .env stuff and init economy database
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+		// fatal cus bot cant start without a token
+		// and token is stored in .env
+		log.Fatalf("No .env file found")
 	}
+
+	bot.InitDB()
 }
 
 func main() {

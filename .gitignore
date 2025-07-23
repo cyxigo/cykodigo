@@ -16,3 +16,6 @@ go.work
 
 # Hehe, thought you can borrow my bot token? >:3
 *.env
+
+# Stuff
+database
