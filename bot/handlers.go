@@ -25,14 +25,18 @@ func flipACoin() bool {
 // util function for commands like
 // meowat [member]
 // returns sender and a [member]
-func getUserAndSender(inter *discordgo.InteractionCreate) (*discordgo.User, *discordgo.User, error) {
+func getUserAndSender(inter *discordgo.InteractionCreate) (
+	*discordgo.User, *discordgo.User, error,
+) {
 	var targetUser *discordgo.User
 	options := inter.ApplicationCommandData().Options
 
-	if len(options) > 0 && options[0].Type == discordgo.ApplicationCommandOptionUser {
+	if len(options) > 0 &&
+		options[0].Type == discordgo.ApplicationCommandOptionUser {
 		userID := options[0].Value.(string)
 
-		if user, ok := inter.ApplicationCommandData().Resolved.Users[userID]; ok {
+		if user,
+			ok := inter.ApplicationCommandData().Resolved.Users[userID]; ok {
 			targetUser = user
 		}
 	}
@@ -51,7 +55,13 @@ func getUserAndSender(inter *discordgo.InteractionCreate) (*discordgo.User, *dis
 }
 
 // util function to send interaction responses
-func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, files []*discordgo.File, allowMentions bool) {
+func respond(
+	sess *discordgo.Session,
+	inter *discordgo.InteractionCreate,
+	content string,
+	files []*discordgo.File,
+	allowMentions bool,
+) {
 	data := &discordgo.InteractionResponseData{
 		Content: content,
 		Files:   files,
@@ -59,7 +69,8 @@ func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, conten
 
 	if allowMentions {
 		data.AllowedMentions = &discordgo.MessageAllowedMentions{
-			Parse: []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers},
+			Parse: []discordgo.AllowedMentionType{
+				discordgo.AllowedMentionTypeUsers},
 		}
 	}
 
@@ -89,13 +100,17 @@ func handleTargetedCmd(
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
-		return fmt.Sprintf("%s meows at %s!", sender.Mention(), target.Mention())
+		return fmt.Sprintf("%s meows at %s!", sender.Mention(),
+			target.Mention())
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
 }
 
-func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+func handleAssault(
+	sess *discordgo.Session,
+	inter *discordgo.InteractionCreate,
+) {
 	contentFunc := func(sender, target *discordgo.User) string {
 		result := "killed them!"
 
@@ -103,14 +118,18 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 			result = "failed! oops"
 		}
 
-		return fmt.Sprintf("%s tried to assault %s and... %s", sender.Mention(), target.Mention(), result)
+		return fmt.Sprintf("%s tried to assault %s and... %s",
+			sender.Mention(), target.Mention(), result)
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
 }
 
 // !!! its a joke command !!!
-func handleSexnkill(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+func handleSexnkill(
+	sess *discordgo.Session,
+	inter *discordgo.InteractionCreate,
+) {
 	contentFunc := func(sender, target *discordgo.User) string {
 		mpreg := "made them pregnant"
 
@@ -118,14 +137,18 @@ func handleSexnkill(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 			mpreg = "failed to make them pregnant"
 		}
 
-		return fmt.Sprintf("%s had sex with %s, %s and killed them!", sender.Mention(), target.Mention(), mpreg)
+		return fmt.Sprintf("%s had sex with %s, %s and killed them!",
+			sender.Mention(), target.Mention(), mpreg)
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
 }
 
 // handler for / commands
-func InteractionHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+func InteractionHandler(
+	sess *discordgo.Session,
+	inter *discordgo.InteractionCreate,
+) {
 	// we dont need to handle some weird interaction stuff here
 	// only commands
 	if inter.Type != discordgo.InteractionApplicationCommand {
@@ -152,7 +175,8 @@ func InteractionHandler(sess *discordgo.Session, inter *discordgo.InteractionCre
 
 		if err != nil {
 			log.Printf("Cannot read 'me.png': %v", err)
-			respond(sess, inter, "Oops, I couldn't find my own picture :<", nil, false)
+			respond(sess, inter,
+				"Oops, I couldn't find my own picture :<", nil, false)
 
 			return
 		}
