@@ -1,19 +1,7 @@
 # cykodigo
 
-a little silly bot
+a little silly bot, feel free to use its code :)
 
-# What
+# note
 
-i dont think this bot needs a readme, why would it?
-
-# Build
-
-what?
-
-# Usage
-
-what? i dont understand
-
-# Credits
-
-okay?
+im not so good at golang, i picked it up just for fun, so if you see some bad code or bad practice feel free to open an issue
