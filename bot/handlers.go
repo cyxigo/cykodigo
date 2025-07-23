@@ -23,7 +23,7 @@ func flipACoin() bool {
 }
 
 // util function for commands like
-// meowat [member]
+// /meowat [member]
 // returns sender and a [member]
 func getUserAndSender(inter *discordgo.InteractionCreate) (
 	*discordgo.User, *discordgo.User, error,
@@ -81,7 +81,7 @@ func respond(
 }
 
 // another util function for commands like
-// meowat [member]
+// /meowat [member]
 func handleTargetedCmd(
 	sess *discordgo.Session,
 	inter *discordgo.InteractionCreate,
