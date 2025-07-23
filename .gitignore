@@ -11,11 +11,8 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
 # Go workspace file
 go.work
 
-# Hehe, thought you can borrow my bot token?
+# Hehe, thought you can borrow my bot token? >:3
 *.env

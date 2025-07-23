@@ -14,5 +14,5 @@ func init() {
 }
 
 func main() {
-	bot.Run()
+	bot.WakeUp()
 }
