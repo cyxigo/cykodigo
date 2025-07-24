@@ -12,145 +12,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// returns true if youre dead
-func roulette() bool {
-	bullet := 3
-	return rand.IntN(6) == bullet
-}
-
-// flip a coin!
-func flipACoin() bool {
-	return rand.IntN(2) != 1
-}
-
-// util function to get random number in range [min, max] cus go
-// for some reason doesnt have it builtin
-func randRange(min, max int) int {
-	return rand.IntN(max-min) + min
-}
-
-// util function for getting interaction sender cus yes
-func getInterSender(inter *discordgo.InteractionCreate) (*discordgo.User, error) {
-	sender := inter.User
-
-	if sender == nil && inter.Member != nil {
-		sender = inter.Member.User
-	}
-
-	if sender == nil {
-		return nil, fmt.Errorf("couldn't get interaction sender :<")
-	}
-
-	return sender, nil
-}
-
-// util function for getting interaction [member] in commands like
-// /meowat [member]
-func getInterUser(inter *discordgo.InteractionCreate, required bool) (*discordgo.User, error) {
-	var targetUser *discordgo.User
-	options := inter.ApplicationCommandData().Options
-
-	if len(options) > 0 && options[0].Type == discordgo.ApplicationCommandOptionUser {
-		userID := options[0].Value.(string)
-
-		if user, ok := inter.ApplicationCommandData().Resolved.Users[userID]; ok {
-			targetUser = user
-		}
-	}
-
-	if required && targetUser == nil {
-		return nil, fmt.Errorf("couldn't find target user :<")
-	}
-
-	return targetUser, nil
-}
-
-// util function for getting interaction user and sender cus yes
-func getInterSenderAndTargetUser(inter *discordgo.InteractionCreate) (*discordgo.User, *discordgo.User, error) {
-	targetUser, err := getInterUser(inter, true)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sender, err := getInterSender(inter)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return sender, targetUser, nil
-}
-
-// util function for getting user balances in sql transactions
-// yes /balance doesnt use it
-// cus /balance doesnt need sql transactions since its just one query
-func getUserBalance(tx *sql.Tx, userID string) int {
-	balance := 0
-	err := tx.QueryRow("SELECT balance FROM balances WHERE user_id = ?", userID).Scan(&balance)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Balance query error: %v", err)
-	}
-
-	return balance
-}
-
-// util function to send interaction responses
-func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, files []*discordgo.File,
-	allowMentions bool) {
-	data := &discordgo.InteractionResponseData{
-		Content: content,
-		Files:   files,
-	}
-
-	if allowMentions {
-		data.AllowedMentions = &discordgo.MessageAllowedMentions{
-			Parse: []discordgo.AllowedMentionType{
-				discordgo.AllowedMentionTypeUsers},
-		}
-	}
-
-	sess.InteractionRespond(inter.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: data,
-	})
-}
-
-// another util function for commands like
-// /meowat [member]
-func handleTargetedCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
-	contentFunc func(sender *discordgo.User, target *discordgo.User) string) {
-	sender, targetUser, err := getInterSenderAndTargetUser(inter)
-
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
-		return
-	}
-
-	content := contentFunc(sender, targetUser)
-	respond(sess, inter, content, nil, true)
-}
-
-// util function for handling commands that send image like
-// /me
-func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, imgName string,
-	imgPath string) {
-	file, err := os.Open(imgPath)
-
-	if err != nil {
-		log.Printf("Error opening '%s': %v", imgName, err)
-		respond(sess, inter, "Couldn't open image :<", nil, false)
-
-		return
-	}
-
-	defer file.Close()
-
-	respond(sess, inter, content, []*discordgo.File{{
-		Name:   imgName,
-		Reader: file,
-	}}, false)
+var shopItems = map[string]int{
+	"candy":   50,
+	"apple":   100,
+	"knife":   200,
+	"gun":     500,
+	"diamond": 1000,
+	"fish":    75,
+	"catnip":  150,
 }
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -183,7 +52,7 @@ func handleBarkAt(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	result := "Victory!!! You're alive!!!"
+	result := "**Victory!!!** You're alive!!!"
 
 	if roulette() {
 		result = "Sorry, you're dead, better luck next ti- uhh.."
@@ -201,21 +70,6 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		}
 
 		return fmt.Sprintf("%s tried to assault %s and... %s", sender.Mention(), target.Mention(), result)
-	}
-
-	handleTargetedCmd(sess, inter, contentFunc)
-}
-
-// !!! its a joke command !!!
-func handleSexnkill(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	contentFunc := func(sender, target *discordgo.User) string {
-		mpreg := "made them pregnant"
-
-		if flipACoin() {
-			mpreg = "failed to make them pregnant"
-		}
-
-		return fmt.Sprintf("%s had sex with %s, %s and killed them!", sender.Mention(), target.Mention(), mpreg)
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
@@ -276,7 +130,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Failed to begin transaction in /work: %v", err)
-		respond(sess, inter, "Failed to work :<", nil, false)
+		respond(sess, inter, "Failed to start work :<", nil, false)
 
 		return
 	}
@@ -298,7 +152,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if lastWork.Valid && (currentTime-lastWork.Int64) < cooldown {
 		remaining := cooldown - (currentTime - lastWork.Int64)
-		content := fmt.Sprintf("You need to wait %d minutes before working again!!!", remaining/60)
+		content := fmt.Sprintf("You need to wait **%d** minutes before working again!!!", remaining/60)
 
 		respond(sess, inter, content, nil, false)
 
@@ -331,31 +185,20 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	content := fmt.Sprintf("You worked and got %d money!1!11!!", money)
+	content := fmt.Sprintf("You worked and got **%d** money!1!11!!", money)
 	respond(sess, inter, content, nil, false)
 }
 
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	// check for [member] option
-	targetUser, err := getInterUser(inter, false)
+	target, err := getInterOptionalTarget(inter)
 
 	if err != nil {
 		respond(sess, inter, err.Error(), nil, false)
 		return
 	}
 
-	// if theres no [member] specified just use sender instead
-	if targetUser == nil {
-		targetUser, err = getInterSender(inter)
-
-		if err != nil {
-			respond(sess, inter, err.Error(), nil, false)
-			return
-		}
-	}
-
 	balance := 0
-	err = DB.QueryRow("SELECT balance FROM balances WHERE user_id = ?", targetUser.ID).Scan(&balance)
+	err = DB.QueryRow("SELECT balance FROM balances WHERE user_id = ?", target.ID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Database error in /balance: %v", err)
@@ -364,32 +207,25 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	content := fmt.Sprintf("%s's balance: %d money!1!11!!", targetUser.Mention(), balance)
+	content := fmt.Sprintf("%s's balance: **%d** money!1!11!!", target.Mention(), balance)
 	respond(sess, inter, content, nil, true)
 }
 
 func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, targetUser, err := getInterSenderAndTargetUser(inter)
+	sender, target, err := getInterSenderAndTarget(inter)
 
 	if err != nil {
 		respond(sess, inter, err.Error(), nil, false)
 		return
 	}
 
-	if sender.ID == targetUser.ID {
+	if sender.ID == target.ID {
 		respond(sess, inter, "You can't transfer money to yourself!!!", nil, false)
 		return
 	}
 
 	options := inter.ApplicationCommandData().Options
-	amount := 0
-
-	for _, option := range options {
-		if option.Name == "amount" {
-			amount = (int)(option.Value.(float64))
-			break
-		}
-	}
+	amount := (int)(options[0].Value.(float64))
 
 	if amount <= 0 {
 		respond(sess, inter, "Transfer amount must be positive!!!", nil, false)
@@ -417,7 +253,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	if err != nil {
 		log.Printf("Deduction error in /transfer: %v", err)
-		respond(sess, inter, "Failed to deduct from your account :<", nil, false)
+		respond(sess, inter, "Failed to deduct money from your account :<", nil, false)
 
 		return
 	}
@@ -438,7 +274,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
         ON CONFLICT(user_id) DO UPDATE SET 
             balance = balance + ?
         `,
-		targetUser.ID, amount, amount)
+		target.ID, amount, amount)
 
 	if err != nil {
 		log.Printf("Add balance error in /transfer: %v", err)
@@ -454,12 +290,12 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	response := fmt.Sprintf("%s transferred %d money to %s!", sender.Mention(), amount, targetUser.Mention())
+	response := fmt.Sprintf("%s transferred %d money to %s!", sender.Mention(), amount, target.Mention())
 	respond(sess, inter, response, nil, true)
 }
 
 func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, target, err := getInterSenderAndTargetUser(inter)
+	sender, target, err := getInterSenderAndTarget(inter)
 
 	if err != nil {
 		respond(sess, inter, err.Error(), nil, false)
@@ -475,7 +311,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Failed to start transaction in /steal: %v", err)
-		respond(sess, inter, "Failed to start stealing :<", nil, false)
+		respond(sess, inter, "Failed to start steal :<", nil, false)
 
 		return
 	}
@@ -485,7 +321,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	targetBalance := getUserBalance(tx, target.ID)
 
 	if targetBalance <= 0 {
-		content := fmt.Sprintf("%s is broke! Nothing to steal.", target.Mention())
+		content := fmt.Sprintf("%s is **broke!** Nothing to steal", target.Mention())
 		respond(sess, inter, content, nil, true)
 
 		return
@@ -506,7 +342,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if lastStealFail.Valid && (currentTime-lastStealFail.Int64) < cooldown {
 		remaining := cooldown - (currentTime - lastStealFail.Int64)
-		content := fmt.Sprintf("You need to wait %d minutes before stealing again after failure!", remaining/60)
+		content := fmt.Sprintf("You need to wait **%d** minutes before stealing again after failure!!!",
+			remaining/60)
 
 		respond(sess, inter, content, nil, false)
 
@@ -530,7 +367,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		if err != nil {
 			log.Printf("Deduction error in /steal: %v", err)
-			respond(sess, inter, "Failed to steal :<", nil, false)
+			respond(sess, inter, "Failed to deduct money from person :<", nil, false)
 
 			return
 		}
@@ -546,12 +383,12 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		if err != nil {
 			log.Printf("Add balance error: %v", err)
-			respond(sess, inter, "Steal failed :<", nil, false)
+			respond(sess, inter, "Failed to add money to your account :<", nil, false)
 
 			return
 		}
 
-		content = fmt.Sprintf("You successfully stole %d money from %s!", stealAmount, target.Mention())
+		content = fmt.Sprintf("You successfully stole **%d** money from %s!", stealAmount, target.Mention())
 	} else {
 		const penalty = 20
 		_, err := tx.Exec(
@@ -571,7 +408,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content = fmt.Sprintf("You failed to steal from %s and lost %d money! :<", target.Mention(), penalty)
+		content = fmt.Sprintf("You failed to steal from %s and lost **%d** money! :<", target.Mention(), penalty)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -582,6 +419,141 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	respond(sess, inter, content, nil, true)
+}
+
+func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	var builder strings.Builder
+	builder.WriteString("# Shop!1!11!!\n")
+	builder.WriteString("> Use /buy [item] to buy something!!!\n")
+
+	for item, price := range shopItems {
+		itemString := fmt.Sprintf("- %s: %d money\n", item, price)
+		builder.WriteString(itemString)
+	}
+
+	respond(sess, inter, builder.String(), nil, false)
+}
+
+func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, err := getInterSender(inter)
+
+	if err != nil {
+		respond(sess, inter, err.Error(), nil, false)
+		return
+	}
+
+	options := inter.ApplicationCommandData().Options
+	itemOption := options[0]
+	itemName := strings.ToLower(itemOption.StringValue())
+
+	price, exists := shopItems[itemName]
+
+	if !exists {
+		content := fmt.Sprintf("There's no item **%s** in the shop!!!", itemName)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	tx, err := DB.Begin()
+
+	if err != nil {
+		log.Printf("Failed to begin transaction in /buy: %v", err)
+		respond(sess, inter, "Failed to start purchasing :<", nil, false)
+
+		return
+	}
+
+	defer tx.Rollback()
+
+	balance := getUserBalance(tx, sender.ID)
+
+	if balance < price {
+		content := fmt.Sprintf("Too broke for **%s**, go work!!!", itemName)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	_, err = tx.Exec("UPDATE balances SET balance = balance - ? WHERE user_id = ?", price, sender.ID)
+
+	if err != nil {
+		log.Printf("Deduction error in /buy: %v", err)
+		respond(sess, inter, "Failed to deduct money from your account :<", nil, false)
+
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, itemName)
+
+	if err != nil {
+		log.Printf("Inventory insert error: %v", err)
+		respond(sess, inter, "Failed to add item to inventory :<", nil, false)
+
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("Commit error in /buy: %v", err)
+		respond(sess, inter, "Failed to finalize purchase :<", nil, false)
+
+		return
+	}
+
+	respond(sess, inter, fmt.Sprintf("You bought **%s** for **%d** money!", itemName, price), nil, false)
+}
+
+func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	target, err := getInterOptionalTarget(inter)
+
+	if err != nil {
+		respond(sess, inter, err.Error(), nil, false)
+		return
+	}
+
+	rows, err := DB.Query("SELECT item FROM inventory WHERE user_id = ?", target.ID)
+
+	if err != nil {
+		log.Printf("Inventory query error: %v", err)
+		respond(sess, inter, "Failed to get inventory :<", nil, false)
+
+		return
+	}
+
+	defer rows.Close()
+
+	// int is amount of items user has, so its like
+	// item: count
+	items := make(map[string]int)
+
+	for rows.Next() {
+		var item string
+
+		if err := rows.Scan(&item); err != nil {
+			continue
+		}
+
+		items[item]++
+	}
+
+	if len(items) == 0 {
+		content := fmt.Sprintf("%s inventory: oops! such an empty :O", target.Mention())
+		respond(sess, inter, content, nil, true)
+
+		return
+	}
+
+	var builder strings.Builder
+
+	inventoryString := fmt.Sprintf("%s inventory:\n", target.Mention())
+	builder.WriteString(inventoryString)
+
+	for item, count := range items {
+		itemString := fmt.Sprintf("- %s ×%d\n", item, count)
+		builder.WriteString(itemString)
+	}
+
+	respond(sess, inter, builder.String(), nil, true)
 }
 
 // handler for interactions
@@ -607,11 +579,9 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	case CmdRoulette:
 		handleRoulette(sess, inter)
 	case CmdMe:
-		handleImageCmd(sess, inter, "", "me.png", "res/me.png")
+		handleImageCmd(sess, inter, "Me!", "me.png", "res/me.png")
 	case CmdAssault:
 		handleAssault(sess, inter)
-	case CmdSexnkill:
-		handleSexnkill(sess, inter)
 	case CmdCat:
 		handleCat(sess, inter)
 	case CmdCart:
@@ -626,6 +596,12 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleTransfer(sess, inter)
 	case CmdSteal:
 		handleSteal(sess, inter)
+	case CmdShop:
+		handleShop(sess, inter)
+	case CmdBuy:
+		handleBuy(sess, inter)
+	case CmdInventory:
+		handleInventory(sess, inter)
 	}
 }
 

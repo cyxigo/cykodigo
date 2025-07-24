@@ -3,22 +3,24 @@ package bot
 import "github.com/bwmarrin/discordgo"
 
 const (
-	CmdHelp     = "help"
-	CmdMeow     = "meow"
-	CmdMeowat   = "meowat"
-	CmdBark     = "bark"
-	CmdBarkat   = "barkat"
-	CmdRoulette = "roulette"
-	CmdMe       = "me"
-	CmdAssault  = "assault"
-	CmdSexnkill = "sexnkill"
-	CmdCat      = "cat"
-	CmdCart     = "cart"
-	CmdDoflip   = "doflip"
-	CmdWork     = "work"
-	CmdBalance  = "balance"
-	CmdTransfer = "transfer"
-	CmdSteal    = "steal"
+	CmdHelp      = "help"
+	CmdMeow      = "meow"
+	CmdMeowat    = "meowat"
+	CmdBark      = "bark"
+	CmdBarkat    = "barkat"
+	CmdRoulette  = "roulette"
+	CmdMe        = "me"
+	CmdAssault   = "assault"
+	CmdCat       = "cat"
+	CmdCart      = "cart"
+	CmdDoflip    = "doflip"
+	CmdWork      = "work"
+	CmdBalance   = "balance"
+	CmdTransfer  = "transfer"
+	CmdSteal     = "steal"
+	CmdShop      = "shop"
+	CmdBuy       = "buy"
+	CmdInventory = "inventory"
 
 	// msg means that this is message content command
 	// same for handlers: handleMsg
@@ -73,7 +75,7 @@ var cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        CmdAssault,
-		Description: "Try to assault someone... shh...",
+		Description: "Try to assault someone... shhh...",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
@@ -84,25 +86,12 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		// !!! its a joke command !!!
-		Name:        CmdSexnkill,
-		Description: "I don't know why you would do that.",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
-				Description: "Person to... you know",
-				Required:    true,
-			},
-		},
-	},
-	{
 		Name:        CmdCat,
 		Description: "Cat!",
 	},
 	{
 		Name:        CmdCart,
-		Description: "Cart! (totally not copied from Cat Bot hehe)",
+		Description: "Cart! (totally NOT copied from Cat Bot hehe)",
 	},
 	{
 		Name:        CmdDoflip,
@@ -143,7 +132,7 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        "steal",
+		Name:        CmdSteal,
 		Description: "Steal money from someone! You can fail though, be careful.",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -151,6 +140,33 @@ var cmds = []*discordgo.ApplicationCommand{
 				Name:        "member",
 				Description: "Person to steal money from",
 				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdShop,
+		Description: "Shop!!! Buy things, lose your money!1!11!!",
+	},
+	{
+		Name:        CmdBuy,
+		Description: "Buy item!1!11!!", Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "item",
+				Description: "Item to buy",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdInventory,
+		Description: "Inventory! Check your items that you've bought",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "member",
+				Description: "Person whose inventory to show (optional)",
+				Required:    false,
 			},
 		},
 	},
