@@ -28,21 +28,7 @@ func WakeUp() {
 
 	defer sess.Close()
 
-	appID := sess.State.User.ID
-
-	// you know what
-	// i hate this loop
-	// cus its sooooooooooooooooooooooooooooooooooooooo long
-	// like to startup bot on my shitty laptop it takes around a minute
-	for _, v := range cmds {
-		_, err := sess.ApplicationCommandCreate(appID, "", v)
-
-		if err != nil {
-			log.Fatalf("Can't create '%s' command: %v", v.Name, err)
-		}
-
-		log.Printf("Created '%s' command", v.Name)
-	}
+	sess.ApplicationCommandBulkOverwrite(sess.State.User.ID, "", cmds)
 
 	log.Printf("Online")
 
