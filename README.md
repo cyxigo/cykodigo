@@ -8,4 +8,4 @@ I don't think building dependencies and etc. needs an explanation, building is `
 
 I'm not so good at Go, I picked it up just for fun, so if you see some bad code or bad practice feel free to open an issue ^\_^
 
-Also, if you have a silly cat image (in `.png` format, thats important) that isn't in `res/cat` open an issue immediately!
+Also, if you have a silly cat image (in `.png` format, that's important) that isn't in `res/cat` open an issue immediately!
