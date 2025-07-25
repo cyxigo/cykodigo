@@ -151,10 +151,10 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		content = fmt.Sprintf("%s tried to shoot %s with a gun and... ", sender.Mention(), target.Mention())
 	}
 
-	result := "killed them!"
+	result := "failed! oops"
 
 	if rand.IntN(99) < chance {
-		result = "failed! oops"
+		result = "killed them!"
 	}
 
 	content += result
