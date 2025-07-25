@@ -13,7 +13,7 @@ import (
 )
 
 // TODO:
-// add /kill command
+// change /assault command to use weapons from your inventory
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
