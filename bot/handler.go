@@ -13,8 +13,7 @@ import (
 )
 
 // TODO:
-// fix messy transactions code (it looks horrible)
-// and add /kill command
+// add /kill command
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
@@ -113,26 +112,22 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, err := getInterSender(inter)
+	sender, ok := getInterSender(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
-	tx, err := DB.Begin()
+	tx, ok := interBeginTx(sess, inter, cmdWork)
 
-	if err != nil {
-		log.Printf("Failed to begin transaction in /work: %v", err)
-		respond(sess, inter, "Failed to start /work :<", nil, false)
-
+	if !ok {
 		return
 	}
 
 	defer tx.Rollback()
 
 	var lastWork sql.NullInt64
-	err = tx.QueryRow("SELECT last_work FROM balances WHERE user_id = ?", sender.ID).Scan(&lastWork)
+	err := tx.QueryRow("SELECT last_work FROM balances WHERE user_id = ?", sender.ID).Scan(&lastWork)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Cooldown check error in /work: %v", err)
@@ -172,10 +167,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("Commit error in /work: %v", err)
-		respond(sess, inter, "Failed to finalize /work :<", nil, false)
-
+	if !interCommitTx(sess, inter, tx, cmdWork) {
 		return
 	}
 
@@ -184,15 +176,14 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	target, err := getInterOptionalTarget(inter)
+	target, ok := getInterOptionalTarget(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
 	balance := 0
-	err = DB.QueryRow("SELECT balance FROM balances WHERE user_id = ?", target.ID).Scan(&balance)
+	err := DB.QueryRow("SELECT balance FROM balances WHERE user_id = ?", target.ID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Database error in /balance: %v", err)
@@ -206,10 +197,9 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 }
 
 func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, target, err := getInterSenderAndTarget(inter)
+	sender, target, ok := getInterSenderAndTarget(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
@@ -226,12 +216,9 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	tx, err := DB.Begin()
+	tx, ok := interBeginTx(sess, inter, cmdTransfer)
 
-	if err != nil {
-		log.Printf("Failed to begin transaction in /transfer: %v", err)
-		respond(sess, inter, "Failed to start /transfer :<", nil, false)
-
+	if !ok {
 		return
 	}
 
@@ -244,16 +231,11 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	_, err = deductMoney(tx, sender.ID, amount)
-
-	if err != nil {
-		log.Printf("Deduction error in /transfer: %v", err)
-		respond(sess, inter, "Failed to deduct money from your account :<", nil, false)
-
+	if !deductMoney(sess, inter, tx, sender.ID, amount, cmdTransfer) {
 		return
 	}
 
-	_, err = tx.Exec(
+	_, err := tx.Exec(
 		`
         INSERT INTO balances(user_id, balance) 
         VALUES(?, ?) 
@@ -269,10 +251,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("Commit error in /transfer: %v", err)
-		respond(sess, inter, "Failed to finalize /transfer :<", nil, false)
-
+	if !interCommitTx(sess, inter, tx, cmdTransfer) {
 		return
 	}
 
@@ -281,10 +260,9 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 }
 
 func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, target, err := getInterSenderAndTarget(inter)
+	sender, target, ok := getInterSenderAndTarget(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
@@ -293,12 +271,9 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, err := DB.Begin()
+	tx, ok := interBeginTx(sess, inter, cmdSteal)
 
-	if err != nil {
-		log.Printf("Failed to begin transaction in /steal: %v", err)
-		respond(sess, inter, "Failed to start /steal :<", nil, false)
-
+	if !ok {
 		return
 	}
 
@@ -314,7 +289,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	var lastStealFail sql.NullInt64
-	err = DB.QueryRow("SELECT last_steal_fail FROM balances WHERE user_id = ?", sender.ID).Scan(&lastStealFail)
+	err := DB.QueryRow("SELECT last_steal_fail FROM balances WHERE user_id = ?", sender.ID).Scan(&lastStealFail)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Cooldown check error in /steal: %v", err)
@@ -344,12 +319,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		stealPercent := rand.IntN(51) // random percentage (0-50%)
 		stealAmount := (stealPercent * targetBalance) / 100
 
-		_, err := deductMoney(tx, target.ID, stealAmount)
-
-		if err != nil {
-			log.Printf("Deduction error in /steal: %v", err)
-			respond(sess, inter, "Failed to deduct money from person :<", nil, false)
-
+		if !deductMoney(sess, inter, tx, target.ID, stealAmount, cmdSteal) {
 			return
 		}
 
@@ -392,10 +362,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		content = fmt.Sprintf("You failed to steal from %s and lost **%d** money! :<", target.Mention(), penalty)
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("Commit error in /steal: %v", err)
-		respond(sess, inter, "Failed to finalize /steal :<", nil, false)
-
+	if !interCommitTx(sess, inter, tx, cmdSteal) {
 		return
 	}
 
@@ -416,10 +383,9 @@ func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, err := getInterSender(inter)
+	sender, ok := getInterSender(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
@@ -433,12 +399,9 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, err := DB.Begin()
+	tx, ok := interBeginTx(sess, inter, cmdBuy)
 
-	if err != nil {
-		log.Printf("Failed to begin transaction in /buy: %v", err)
-		respond(sess, inter, "Failed to start /buy :<", nil, false)
-
+	if !ok {
 		return
 	}
 
@@ -453,16 +416,11 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	_, err = deductMoney(tx, sender.ID, price)
-
-	if err != nil {
-		log.Printf("Deduction error in /buy: %v", err)
-		respond(sess, inter, "Failed to deduct money from your account :<", nil, false)
-
+	if !deductMoney(sess, inter, tx, sender.ID, price, cmdBuy) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item)
+	_, err := tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item)
 
 	if err != nil {
 		log.Printf("Insert error in /inventory: %v", err)
@@ -471,10 +429,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("Commit error in /buy: %v", err)
-		respond(sess, inter, "Failed to finalize /buy :<", nil, false)
-
+	if !interCommitTx(sess, inter, tx, cmdBuy) {
 		return
 	}
 
@@ -482,10 +437,9 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	target, err := getInterOptionalTarget(inter)
+	target, ok := getInterOptionalTarget(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
@@ -515,7 +469,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	}
 
 	if len(items) == 0 {
-		content := fmt.Sprintf("%s inventory: oops! such an empty :O", target.Mention())
+		content := fmt.Sprintf("%s inventory: oops! such an empty", target.Mention())
 		respond(sess, inter, content, nil, true)
 
 		return
@@ -535,10 +489,9 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 }
 
 func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, err := getInterSender(inter)
+	sender, ok := getInterSender(sess, inter)
 
-	if err != nil {
-		respond(sess, inter, err.Error(), nil, false)
+	if !ok {
 		return
 	}
 
@@ -559,19 +512,16 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, err := DB.Begin()
+	tx, ok := interBeginTx(sess, inter, cmdEat)
 
-	if err != nil {
-		log.Printf("Failed to begin transaction in /eat: %v", err)
-		respond(sess, inter, "Failed to start /eat :<", nil, false)
-
+	if !ok {
 		return
 	}
 
 	defer tx.Rollback()
 
 	var count int
-	err = tx.QueryRow(
+	err := tx.QueryRow(
 		`
 		SELECT COUNT(*) FROM inventory WHERE user_id = ? AND item = ?
 		`,
@@ -604,10 +554,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("Commit error in /eat: %v", err)
-		respond(sess, inter, "Failed to finalize /eat :<", nil, false)
-
+	if !interCommitTx(sess, inter, tx, cmdEat) {
 		return
 	}
 
@@ -739,5 +686,7 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		)
 	case strings.Contains(content, cmdMsgExplodeBalls):
 		sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
+	case strings.Contains(content, cmdMsgGlamptastic):
+		sess.ChannelMessageSend(msg.ChannelID, "glamptastic!")
 	}
 }

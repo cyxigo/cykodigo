@@ -1,6 +1,6 @@
 # cykodigo
 
-A little silly discord bot, feel free to use its code :>
+A little silly discord bot, feel free to use its code (don't forget to credit me) :>
 
 I don't think building dependencies and etc. needs an explanation, building is `go build .` and everything else is managed by Go
 

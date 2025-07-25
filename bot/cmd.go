@@ -29,6 +29,7 @@ const (
 	cmdMsgMeow         = "meow"
 	cmdMsgCrazy        = "crazy"
 	cmdMsgExplodeBalls = "cykodigo explode balls"
+	cmdMsgGlamptastic  = "glamptastic"
 )
 
 // slash commands, looooooooooong list of them
@@ -110,7 +111,7 @@ var cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        cmdBalance,
-		Description: "Shows your or someone's money balance, so democratic!",
+		Description: "Balance! Check how much money you've got from hard work",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
