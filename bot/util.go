@@ -169,3 +169,13 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 		Reader: file,
 	}}, false)
 }
+
+// util function for money deduction in transactions
+//
+// turns out its very common operation ¯\_(ツ)_/¯
+//
+// note: you should check for balance being less than amount
+func deductMoney(tx *sql.Tx, userID string, amount int) (sql.Result, error) {
+	res, err := tx.Exec("UPDATE balances SET balance = balance - ? WHERE user_id = ?", amount, userID, amount)
+	return res, err
+}

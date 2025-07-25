@@ -14,6 +14,7 @@ const (
 	CmdCat       = "cat"
 	CmdCart      = "cart"
 	CmdDoflip    = "doflip"
+	CmdExplode   = "explode"
 	CmdWork      = "work"
 	CmdBalance   = "balance"
 	CmdTransfer  = "transfer"
@@ -24,8 +25,9 @@ const (
 
 	// msg means that this is message content command
 	// same for handlers: handleMsg
-	CmdMsgMeow  = "meow"
-	CmdMsgCrazy = "crazy"
+	CmdMsgMeow         = "meow"
+	CmdMsgCrazy        = "crazy"
+	CmdMsgExplodeBalls = "cykodigo explode balls"
 )
 
 // slash commands, looooooooooong list of them
@@ -96,6 +98,10 @@ var cmds = []*discordgo.ApplicationCommand{
 	{
 		Name:        CmdDoflip,
 		Description: "He will do a flip",
+	},
+	{
+		Name:        CmdExplode,
+		Description: "He will explo- WHAT??? DON'T DO THAT!!!",
 	},
 	{
 		Name:        CmdWork,

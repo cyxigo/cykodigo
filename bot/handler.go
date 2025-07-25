@@ -243,27 +243,19 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	defer tx.Rollback()
 
-	res, err := tx.Exec(
-		`
-        UPDATE balances 
-        SET balance = balance - ? 
-        WHERE user_id = ? AND balance >= ?
-        `,
-		amount, sender.ID, amount)
+	balance := getUserBalance(tx, sender.ID)
+
+	if balance < amount {
+		respond(sess, inter, "You don't have enough money for this transfer!!!", nil, false)
+		return
+	}
+
+	_, err = deductMoney(tx, sender.ID, amount)
 
 	if err != nil {
 		log.Printf("Deduction error in /transfer: %v", err)
 		respond(sess, inter, "Failed to deduct money from your account :<", nil, false)
 
-		return
-	}
-
-	// i think it will return error if database driver doesnt support RowsAffected
-	// so i dont do check
-	rowsAffected, _ := res.RowsAffected()
-
-	if rowsAffected == 0 {
-		respond(sess, inter, "You don't have enough money for this transfer!!!", nil, false)
 		return
 	}
 
@@ -358,12 +350,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		stealPercent := rand.IntN(51) // random percentage (0-50%)
 		stealAmount := (stealPercent * targetBalance) / 100
 
-		_, err := tx.Exec(
-			`
-			UPDATE balances SET balance = balance - ? WHERE user_id = ? AND balance >= ?
-			`,
-			stealAmount, target.ID, stealAmount,
-		)
+		_, err := deductMoney(tx, target.ID, stealAmount)
 
 		if err != nil {
 			log.Printf("Deduction error in /steal: %v", err)
@@ -475,7 +462,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE balances SET balance = balance - ? WHERE user_id = ?", price, sender.ID)
+	_, err = deductMoney(tx, sender.ID, price)
 
 	if err != nil {
 		log.Printf("Deduction error in /buy: %v", err)
@@ -588,6 +575,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleImageCmd(sess, inter, "Cart!", "cart.png", "res/cart.png")
 	case CmdDoflip:
 		handleImageCmd(sess, inter, "Woah!", "flip.png", "res/flip.png")
+	case CmdExplode:
+		handleImageCmd(sess, inter, "WHAAAAAAAA-", "boom.png", "res/boom.png")
 	case CmdWork:
 		handleWork(sess, inter)
 	case CmdBalance:
@@ -664,7 +653,8 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 	content := strings.ToLower(msg.Content)
 
 	switch {
-	case strings.Contains(content, sess.State.User.Username):
+	// CmdMsgExplodeBalls has 'cykodigo' in it, so check if we didnt get a conflict
+	case strings.Contains(content, sess.State.User.Username) && !strings.Contains(content, CmdMsgExplodeBalls):
 		handleMsgBotUsername(sess, msg)
 	case strings.Contains(content, CmdMsgMeow):
 		handleMsgMeow(sess, msg)
@@ -673,5 +663,7 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 			"Crazy? I was crazy once, They locked me in a room, a rubber room, a rubber room with rats, "+
 				"and rats make me crazy.",
 		)
+	case strings.Contains(content, CmdMsgExplodeBalls):
+		sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
 	}
 }
