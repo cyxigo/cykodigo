@@ -12,9 +12,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// TODO:
-// change /assault command to use weapons from your inventory
-
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
 		return fmt.Sprintf("%s meows at %s!", sender.Mention(), target.Mention())
@@ -39,30 +36,6 @@ func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 func handleBarkAt(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
 		return fmt.Sprintf("%s barks at %s!", sender.Mention(), target.Mention())
-	}
-
-	handleTargetedCmd(sess, inter, contentFunc)
-}
-
-func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	result := "**Victory!!!** You're alive!!!"
-
-	if roulette() {
-		result = "Sorry, you're dead, better luck next ti- uhh.."
-	}
-
-	respond(sess, inter, result, nil, false)
-}
-
-func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	contentFunc := func(sender, target *discordgo.User) string {
-		result := "killed them!"
-
-		if flipACoin() {
-			result = "failed! oops"
-		}
-
-		return fmt.Sprintf("%s tried to assault %s and... %s", sender.Mention(), target.Mention(), result)
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
@@ -111,6 +84,83 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}}, false)
 }
 
+func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	result := "**Victory!!!** You're alive!!!"
+	bullet := 3
+
+	if rand.IntN(5) == bullet {
+		result = "Sorry, you're dead, better luck next ti- uhh.."
+	}
+
+	respond(sess, inter, result, nil, false)
+}
+
+func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, target, ok := getInterSenderAndTarget(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	// note: Options[0] is target
+	item, _, ok := getItemFromInterOption(sess, inter, 1)
+
+	if !ok {
+		return
+	}
+
+	if !isWeapon(item) {
+		content := fmt.Sprintf("Item **%s** isn't a weapon!!!", item)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	count := 0
+	err := DB.QueryRow(
+		`
+		SELECT COUNT(*) FROM inventory WHERE user_id = ? AND item = ?
+		`,
+		sender.ID, item).Scan(&count)
+
+	if err != nil {
+		log.Printf("Count error in /assault: %v", err)
+		respond(sess, inter, "Failed to check inventory :<", nil, false)
+
+		return
+	}
+
+	if count == 0 {
+		respond(sess, inter, fmt.Sprintf("You don't have **%s** in your inventory!!!", item), nil, false)
+		return
+	}
+
+	if !ok {
+		return
+	}
+
+	chance := 0
+	content := ""
+
+	switch item {
+	case itemKnife:
+		chance = 20
+		content = fmt.Sprintf("%s tried to stab %s with a knife and... ", sender.Mention(), target.Mention())
+	case itemGun:
+		chance = 70
+		content = fmt.Sprintf("%s tried to shoot %s with a gun and... ", sender.Mention(), target.Mention())
+	}
+
+	result := "killed them!"
+
+	if rand.IntN(99) < chance {
+		result = "failed! oops"
+	}
+
+	content += result
+	respond(sess, inter, content, nil, true)
+}
+
 func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	sender, ok := getInterSender(sess, inter)
 
@@ -148,7 +198,8 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	money := randRange(100, 200)
+	// random number from range 100-200
+	money := rand.IntN(100) + 100
 
 	_, err = tx.Exec(
 		`
@@ -389,13 +440,9 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	item := strings.ToLower(inter.ApplicationCommandData().Options[0].StringValue())
-	price, exists := shopItems[item]
+	item, price, ok := getItemFromInterOption(sess, inter, 0)
 
-	if !exists {
-		content := fmt.Sprintf("There's no item **%s** in the shop!!!", item)
-		respond(sess, inter, content, nil, false)
-
+	if !ok {
 		return
 	}
 
@@ -459,7 +506,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	items := make(map[string]int)
 
 	for rows.Next() {
-		var item string
+		item := ""
 
 		if err := rows.Scan(&item); err != nil {
 			continue
@@ -495,13 +542,9 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	item := strings.ToLower(inter.ApplicationCommandData().Options[0].StringValue())
-	_, exists := shopItems[item]
+	item, _, ok := getItemFromInterOption(sess, inter, 0)
 
-	if !exists {
-		content := fmt.Sprintf("There's no item **%s**!!!", item)
-		respond(sess, inter, content, nil, false)
-
+	if !ok {
 		return
 	}
 
@@ -520,7 +563,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	var count int
+	count := 0
 	err := tx.QueryRow(
 		`
 		SELECT COUNT(*) FROM inventory WHERE user_id = ? AND item = ?
@@ -574,6 +617,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	switch inter.ApplicationCommandData().Name {
 	case cmdHelp:
 		respond(sess, inter, "I don't know........ ummmm...... awkwar.......", nil, false)
+	case cmdMe:
+		handleImageCmd(sess, inter, "Me!", "me.png", "res/me.png")
 	case cmdMeow:
 		respond(sess, inter, "Meow!", nil, false)
 	case cmdMeowat:
@@ -582,20 +627,22 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleBark(sess, inter)
 	case cmdBarkat:
 		handleBarkAt(sess, inter)
-	case cmdRoulette:
-		handleRoulette(sess, inter)
-	case cmdMe:
-		handleImageCmd(sess, inter, "Me!", "me.png", "res/me.png")
-	case cmdAssault:
-		handleAssault(sess, inter)
-	case cmdCat:
-		handleCat(sess, inter)
-	case cmdCart:
-		handleImageCmd(sess, inter, "Cart!", "cart.png", "res/cart.png")
 	case cmdDoflip:
 		handleImageCmd(sess, inter, "Woah!", "flip.png", "res/flip.png")
 	case cmdExplode:
 		handleImageCmd(sess, inter, "WHAAAAAAAA-", "boom.png", "res/boom.png")
+	case cmdSpin:
+		// uhh yes im using handleImageCmd for sending a gif
+		// and what? what you gonna do?
+		handleImageCmd(sess, inter, "Wooooooo", "spin.gif", "res/spin.gif")
+	case cmdCat:
+		handleCat(sess, inter)
+	case cmdCart:
+		handleImageCmd(sess, inter, "Cart!", "cart.png", "res/cart.png")
+	case cmdRoulette:
+		handleRoulette(sess, inter)
+	case cmdAssault:
+		handleAssault(sess, inter)
 	case cmdWork:
 		handleWork(sess, inter)
 	case cmdBalance:

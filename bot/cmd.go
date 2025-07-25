@@ -4,17 +4,18 @@ import "github.com/bwmarrin/discordgo"
 
 const (
 	cmdHelp      = "help"
+	cmdMe        = "me"
 	cmdMeow      = "meow"
 	cmdMeowat    = "meowat"
 	cmdBark      = "bark"
 	cmdBarkat    = "barkat"
-	cmdRoulette  = "roulette"
-	cmdMe        = "me"
-	cmdAssault   = "assault"
-	cmdCat       = "cat"
-	cmdCart      = "cart"
 	cmdDoflip    = "doflip"
 	cmdExplode   = "explode"
+	cmdSpin      = "spin"
+	cmdCat       = "cat"
+	cmdCart      = "cart"
+	cmdRoulette  = "roulette"
+	cmdAssault   = "assault"
 	cmdWork      = "work"
 	cmdBalance   = "balance"
 	cmdTransfer  = "transfer"
@@ -37,6 +38,10 @@ var cmds = []*discordgo.ApplicationCommand{
 	{
 		Name:        cmdHelp,
 		Description: "This... will not help actually",
+	},
+	{
+		Name:        cmdMe,
+		Description: "Send picture of me! Nah, not you of course",
 	},
 	{
 		Name:        cmdMeow,
@@ -70,12 +75,28 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        cmdRoulette,
-		Description: "Why don't we play a little game?",
+		Name:        cmdDoflip,
+		Description: "He will do a flip",
 	},
 	{
-		Name:        cmdMe,
-		Description: "Send picture of me! Nah, not you of course",
+		Name:        cmdExplode,
+		Description: "He will explo- WHAT??? DON'T DO THAT!!!",
+	},
+	{
+		Name:        cmdSpin,
+		Description: "He will spin! Wooooooo",
+	},
+	{
+		Name:        cmdCat,
+		Description: "Cat!",
+	},
+	{
+		Name:        cmdCart,
+		Description: "Cart! (totally NOT copied from Cat Bot hehe)",
+	},
+	{
+		Name:        cmdRoulette,
+		Description: "Why don't we play a little game?",
 	},
 	{
 		Name:        cmdAssault,
@@ -87,23 +108,13 @@ var cmds = []*discordgo.ApplicationCommand{
 				Description: "Person to try to assault",
 				Required:    true,
 			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "item",
+				Description: "Item to assault someone with",
+				Required:    true,
+			},
 		},
-	},
-	{
-		Name:        cmdCat,
-		Description: "Cat!",
-	},
-	{
-		Name:        cmdCart,
-		Description: "Cart! (totally NOT copied from Cat Bot hehe)",
-	},
-	{
-		Name:        cmdDoflip,
-		Description: "He will do a flip",
-	},
-	{
-		Name:        cmdExplode,
-		Description: "He will explo- WHAT??? DON'T DO THAT!!!",
 	},
 	{
 		Name:        cmdWork,

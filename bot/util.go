@@ -4,28 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"math/rand/v2"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
 )
-
-// returns true if youre dead
-func roulette() bool {
-	bullet := 3
-	return rand.IntN(6) == bullet
-}
-
-// flip a coin!
-func flipACoin() bool {
-	return rand.IntN(2) != 1
-}
-
-// util function to get random number in range [min, max] cus go
-// for some reason doesnt have it builtin
-func randRange(min, max int) int {
-	return rand.IntN(max-min) + min
-}
 
 // quick note for myself cus i will forget 100%:
 // sender - person who used command
@@ -126,20 +108,6 @@ func getInterOptionalTarget(sess *discordgo.Session, inter *discordgo.Interactio
 	return target, ok
 }
 
-// util function for getting user balances in sql transactions
-// yes /balance doesnt use it
-// cus /balance doesnt need sql transactions since its just one query
-func getUserBalance(tx *sql.Tx, userID string) int {
-	balance := 0
-	err := tx.QueryRow("SELECT balance FROM balances WHERE user_id = ?", userID).Scan(&balance)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Query error in getUserBalance: %v", err)
-	}
-
-	return balance
-}
-
 // another util function for commands like
 // /meowat [member]
 func handleTargetedCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
@@ -173,6 +141,20 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 		Name:   imgName,
 		Reader: file,
 	}}, false)
+}
+
+// util function for getting user balances in sql transactions
+// yes /balance doesnt use it
+// cus /balance doesnt need sql transactions since its just one query
+func getUserBalance(tx *sql.Tx, userID string) int {
+	balance := 0
+	err := tx.QueryRow("SELECT balance FROM balances WHERE user_id = ?", userID).Scan(&balance)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Query error in getUserBalance: %v", err)
+	}
+
+	return balance
 }
 
 // util function for money deduction in interactions sql transactions
