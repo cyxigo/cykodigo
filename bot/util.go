@@ -39,6 +39,7 @@ func getInterSender(inter *discordgo.InteractionCreate) (*discordgo.User, error)
 		sender = inter.Member.User
 	}
 
+	// how
 	if sender == nil {
 		return nil, fmt.Errorf("couldn't get interaction sender :<")
 	}
@@ -107,7 +108,7 @@ func getUserBalance(tx *sql.Tx, userID string) int {
 	err := tx.QueryRow("SELECT balance FROM balances WHERE user_id = ?", userID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Balance query error: %v", err)
+		log.Printf("Query error in getUserBalance: %v", err)
 	}
 
 	return balance

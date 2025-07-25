@@ -3,45 +3,46 @@ package bot
 import "github.com/bwmarrin/discordgo"
 
 const (
-	CmdHelp      = "help"
-	CmdMeow      = "meow"
-	CmdMeowat    = "meowat"
-	CmdBark      = "bark"
-	CmdBarkat    = "barkat"
-	CmdRoulette  = "roulette"
-	CmdMe        = "me"
-	CmdAssault   = "assault"
-	CmdCat       = "cat"
-	CmdCart      = "cart"
-	CmdDoflip    = "doflip"
-	CmdExplode   = "explode"
-	CmdWork      = "work"
-	CmdBalance   = "balance"
-	CmdTransfer  = "transfer"
-	CmdSteal     = "steal"
-	CmdShop      = "shop"
-	CmdBuy       = "buy"
-	CmdInventory = "inventory"
+	cmdHelp      = "help"
+	cmdMeow      = "meow"
+	cmdMeowat    = "meowat"
+	cmdBark      = "bark"
+	cmdBarkat    = "barkat"
+	cmdRoulette  = "roulette"
+	cmdMe        = "me"
+	cmdAssault   = "assault"
+	cmdCat       = "cat"
+	cmdCart      = "cart"
+	cmdDoflip    = "doflip"
+	cmdExplode   = "explode"
+	cmdWork      = "work"
+	cmdBalance   = "balance"
+	cmdTransfer  = "transfer"
+	cmdSteal     = "steal"
+	cmdShop      = "shop"
+	cmdBuy       = "buy"
+	cmdInventory = "inventory"
+	cmdEat       = "eat"
 
 	// msg means that this is message content command
 	// same for handlers: handleMsg
-	CmdMsgMeow         = "meow"
-	CmdMsgCrazy        = "crazy"
-	CmdMsgExplodeBalls = "cykodigo explode balls"
+	cmdMsgMeow         = "meow"
+	cmdMsgCrazy        = "crazy"
+	cmdMsgExplodeBalls = "cykodigo explode balls"
 )
 
 // slash commands, looooooooooong list of them
 var cmds = []*discordgo.ApplicationCommand{
 	{
-		Name:        CmdHelp,
+		Name:        cmdHelp,
 		Description: "This... will not help actually",
 	},
 	{
-		Name:        CmdMeow,
+		Name:        cmdMeow,
 		Description: "He will meow",
 	},
 	{
-		Name:        CmdMeowat,
+		Name:        cmdMeowat,
 		Description: "Meow at someone!",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -53,11 +54,11 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdBark,
+		Name:        cmdBark,
 		Description: "He will... or won't bark. I don't know he's a cat",
 	},
 	{
-		Name:        CmdBarkat,
+		Name:        cmdBarkat,
 		Description: "Bark at someone!", Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
@@ -68,15 +69,15 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdRoulette,
+		Name:        cmdRoulette,
 		Description: "Why don't we play a little game?",
 	},
 	{
-		Name:        CmdMe,
+		Name:        cmdMe,
 		Description: "Send picture of me! Nah, not you of course",
 	},
 	{
-		Name:        CmdAssault,
+		Name:        cmdAssault,
 		Description: "Try to assault someone... shhh...",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -88,27 +89,27 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdCat,
+		Name:        cmdCat,
 		Description: "Cat!",
 	},
 	{
-		Name:        CmdCart,
+		Name:        cmdCart,
 		Description: "Cart! (totally NOT copied from Cat Bot hehe)",
 	},
 	{
-		Name:        CmdDoflip,
+		Name:        cmdDoflip,
 		Description: "He will do a flip",
 	},
 	{
-		Name:        CmdExplode,
+		Name:        cmdExplode,
 		Description: "He will explo- WHAT??? DON'T DO THAT!!!",
 	},
 	{
-		Name:        CmdWork,
+		Name:        cmdWork,
 		Description: "Work and get paid! Money!1!11!!",
 	},
 	{
-		Name:        CmdBalance,
+		Name:        cmdBalance,
 		Description: "Shows your or someone's money balance, so democratic!",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -120,7 +121,7 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdTransfer,
+		Name:        cmdTransfer,
 		Description: "Transfer your money to another person",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -138,7 +139,7 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdSteal,
+		Name:        cmdSteal,
 		Description: "Steal money from someone! You can fail though, be careful.",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -150,11 +151,11 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdShop,
+		Name:        cmdShop,
 		Description: "Shop!!! Buy things, lose your money!1!11!!",
 	},
 	{
-		Name:        CmdBuy,
+		Name:        cmdBuy,
 		Description: "Buy item!1!11!!", Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
@@ -165,7 +166,7 @@ var cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdInventory,
+		Name:        cmdInventory,
 		Description: "Inventory! Check your items that you've bought",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -173,6 +174,18 @@ var cmds = []*discordgo.ApplicationCommand{
 				Name:        "member",
 				Description: "Person whose inventory to show (optional)",
 				Required:    false,
+			},
+		},
+	},
+	{
+		Name:        cmdEat,
+		Description: "Eat something from your inventory",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "item",
+				Description: "Item to eat",
+				Required:    true,
 			},
 		},
 	},

@@ -12,15 +12,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var shopItems = map[string]int{
-	"candy":   50,
-	"apple":   100,
-	"knife":   200,
-	"gun":     500,
-	"diamond": 1000,
-	"fish":    75,
-	"catnip":  150,
-}
+// TODO:
+// fix messy transactions code (it looks horrible)
+// and add /kill command
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
@@ -130,7 +124,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Failed to begin transaction in /work: %v", err)
-		respond(sess, inter, "Failed to start work :<", nil, false)
+		respond(sess, inter, "Failed to start /work :<", nil, false)
 
 		return
 	}
@@ -180,7 +174,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err := tx.Commit(); err != nil {
 		log.Printf("Commit error in /work: %v", err)
-		respond(sess, inter, "Failed to finalize work :<", nil, false)
+		respond(sess, inter, "Failed to finalize /work :<", nil, false)
 
 		return
 	}
@@ -236,7 +230,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	if err != nil {
 		log.Printf("Failed to begin transaction in /transfer: %v", err)
-		respond(sess, inter, "Failed to start transfer :<", nil, false)
+		respond(sess, inter, "Failed to start /transfer :<", nil, false)
 
 		return
 	}
@@ -269,7 +263,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		target.ID, amount, amount)
 
 	if err != nil {
-		log.Printf("Add balance error in /transfer: %v", err)
+		log.Printf("Insert error in /transfer: %v", err)
 		respond(sess, inter, "Failed to add money to recipient :<", nil, false)
 
 		return
@@ -277,7 +271,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	if err := tx.Commit(); err != nil {
 		log.Printf("Commit error in /transfer: %v", err)
-		respond(sess, inter, "Failed to finalize transfer :<", nil, false)
+		respond(sess, inter, "Failed to finalize /transfer :<", nil, false)
 
 		return
 	}
@@ -302,8 +296,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	tx, err := DB.Begin()
 
 	if err != nil {
-		log.Printf("Failed to start transaction in /steal: %v", err)
-		respond(sess, inter, "Failed to start steal :<", nil, false)
+		log.Printf("Failed to begin transaction in /steal: %v", err)
+		respond(sess, inter, "Failed to start /steal :<", nil, false)
 
 		return
 	}
@@ -369,7 +363,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		)
 
 		if err != nil {
-			log.Printf("Add balance error: %v", err)
+			log.Printf("Insert error in /steal: %v", err)
 			respond(sess, inter, "Failed to add money to your account :<", nil, false)
 
 			return
@@ -400,7 +394,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err := tx.Commit(); err != nil {
 		log.Printf("Commit error in /steal: %v", err)
-		respond(sess, inter, "Failed to finalize steal :<", nil, false)
+		respond(sess, inter, "Failed to finalize /steal :<", nil, false)
 
 		return
 	}
@@ -429,14 +423,11 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	options := inter.ApplicationCommandData().Options
-	itemOption := options[0]
-	itemName := strings.ToLower(itemOption.StringValue())
-
-	price, exists := shopItems[itemName]
+	item := strings.ToLower(inter.ApplicationCommandData().Options[0].StringValue())
+	price, exists := shopItems[item]
 
 	if !exists {
-		content := fmt.Sprintf("There's no item **%s** in the shop!!!", itemName)
+		content := fmt.Sprintf("There's no item **%s** in the shop!!!", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -446,7 +437,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Failed to begin transaction in /buy: %v", err)
-		respond(sess, inter, "Failed to start purchasing :<", nil, false)
+		respond(sess, inter, "Failed to start /buy :<", nil, false)
 
 		return
 	}
@@ -456,7 +447,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	balance := getUserBalance(tx, sender.ID)
 
 	if balance < price {
-		content := fmt.Sprintf("Too broke for **%s**, go work!!!", itemName)
+		content := fmt.Sprintf("Too broke for **%s**, go work!!!", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -471,10 +462,10 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, itemName)
+	_, err = tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item)
 
 	if err != nil {
-		log.Printf("Inventory insert error: %v", err)
+		log.Printf("Insert error in /inventory: %v", err)
 		respond(sess, inter, "Failed to add item to inventory :<", nil, false)
 
 		return
@@ -482,12 +473,12 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err := tx.Commit(); err != nil {
 		log.Printf("Commit error in /buy: %v", err)
-		respond(sess, inter, "Failed to finalize purchase :<", nil, false)
+		respond(sess, inter, "Failed to finalize /buy :<", nil, false)
 
 		return
 	}
 
-	respond(sess, inter, fmt.Sprintf("You bought **%s** for **%d** money!", itemName, price), nil, false)
+	respond(sess, inter, fmt.Sprintf("You bought **%s** for **%d** money!", item, price), nil, false)
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -501,8 +492,8 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	rows, err := DB.Query("SELECT item FROM inventory WHERE user_id = ?", target.ID)
 
 	if err != nil {
-		log.Printf("Inventory query error: %v", err)
-		respond(sess, inter, "Failed to get inventory :<", nil, false)
+		log.Printf("Query error in /inventory: %v", err)
+		respond(sess, inter, "Failed to check inventory :<", nil, false)
 
 		return
 	}
@@ -543,6 +534,87 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	respond(sess, inter, builder.String(), nil, true)
 }
 
+func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, err := getInterSender(inter)
+
+	if err != nil {
+		respond(sess, inter, err.Error(), nil, false)
+		return
+	}
+
+	item := strings.ToLower(inter.ApplicationCommandData().Options[0].StringValue())
+	_, exists := shopItems[item]
+
+	if !exists {
+		content := fmt.Sprintf("There's no item **%s**!!!", item)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	if !isFood(item) {
+		content := fmt.Sprintf("You can't eat **%s**!!!", item)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	tx, err := DB.Begin()
+
+	if err != nil {
+		log.Printf("Failed to begin transaction in /eat: %v", err)
+		respond(sess, inter, "Failed to start /eat :<", nil, false)
+
+		return
+	}
+
+	defer tx.Rollback()
+
+	var count int
+	err = tx.QueryRow(
+		`
+		SELECT COUNT(*) FROM inventory WHERE user_id = ? AND item = ?
+		`,
+		sender.ID, item).Scan(&count)
+
+	if err != nil {
+		log.Printf("Count error in /eat: %v", err)
+		respond(sess, inter, "Failed to check inventory :<", nil, false)
+
+		return
+	}
+
+	if count == 0 {
+		respond(sess, inter, fmt.Sprintf("You don't have **%s** in your inventory!!!", item), nil, false)
+		return
+	}
+
+	_, err = tx.Exec(
+		`
+		DELETE FROM inventory WHERE rowid = (
+			SELECT rowid FROM inventory WHERE user_id = ? AND item = ? LIMIT 1
+		)
+		`,
+		sender.ID, item)
+
+	if err != nil {
+		log.Printf("Delete error in /eat: %v", err)
+		respond(sess, inter, "Failed to get inventory :<", nil, false)
+
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("Commit error in /eat: %v", err)
+		respond(sess, inter, "Failed to finalize /eat :<", nil, false)
+
+		return
+	}
+
+	content := fmt.Sprintf("You ate **%s**! Yummy!", item)
+	respond(sess, inter, content, nil, false)
+}
+
 // handler for interactions
 // used only for / commands
 func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -553,44 +625,46 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	switch inter.ApplicationCommandData().Name {
-	case CmdHelp:
+	case cmdHelp:
 		respond(sess, inter, "I don't know........ ummmm...... awkwar.......", nil, false)
-	case CmdMeow:
+	case cmdMeow:
 		respond(sess, inter, "Meow!", nil, false)
-	case CmdMeowat:
+	case cmdMeowat:
 		handleMeowat(sess, inter)
-	case CmdBark:
+	case cmdBark:
 		handleBark(sess, inter)
-	case CmdBarkat:
+	case cmdBarkat:
 		handleBarkAt(sess, inter)
-	case CmdRoulette:
+	case cmdRoulette:
 		handleRoulette(sess, inter)
-	case CmdMe:
+	case cmdMe:
 		handleImageCmd(sess, inter, "Me!", "me.png", "res/me.png")
-	case CmdAssault:
+	case cmdAssault:
 		handleAssault(sess, inter)
-	case CmdCat:
+	case cmdCat:
 		handleCat(sess, inter)
-	case CmdCart:
+	case cmdCart:
 		handleImageCmd(sess, inter, "Cart!", "cart.png", "res/cart.png")
-	case CmdDoflip:
+	case cmdDoflip:
 		handleImageCmd(sess, inter, "Woah!", "flip.png", "res/flip.png")
-	case CmdExplode:
+	case cmdExplode:
 		handleImageCmd(sess, inter, "WHAAAAAAAA-", "boom.png", "res/boom.png")
-	case CmdWork:
+	case cmdWork:
 		handleWork(sess, inter)
-	case CmdBalance:
+	case cmdBalance:
 		handleBalance(sess, inter)
-	case CmdTransfer:
+	case cmdTransfer:
 		handleTransfer(sess, inter)
-	case CmdSteal:
+	case cmdSteal:
 		handleSteal(sess, inter)
-	case CmdShop:
+	case cmdShop:
 		handleShop(sess, inter)
-	case CmdBuy:
+	case cmdBuy:
 		handleBuy(sess, inter)
-	case CmdInventory:
+	case cmdInventory:
 		handleInventory(sess, inter)
+	case cmdEat:
+		handleEat(sess, inter)
 	}
 }
 
@@ -654,16 +728,16 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 
 	switch {
 	// CmdMsgExplodeBalls has 'cykodigo' in it, so check if we didnt get a conflict
-	case strings.Contains(content, sess.State.User.Username) && !strings.Contains(content, CmdMsgExplodeBalls):
+	case strings.Contains(content, sess.State.User.Username) && !strings.Contains(content, cmdMsgExplodeBalls):
 		handleMsgBotUsername(sess, msg)
-	case strings.Contains(content, CmdMsgMeow):
+	case strings.Contains(content, cmdMsgMeow):
 		handleMsgMeow(sess, msg)
-	case strings.Contains(content, CmdMsgCrazy):
+	case strings.Contains(content, cmdMsgCrazy):
 		sess.ChannelMessageSend(msg.ChannelID,
 			"Crazy? I was crazy once, They locked me in a room, a rubber room, a rubber room with rats, "+
 				"and rats make me crazy.",
 		)
-	case strings.Contains(content, CmdMsgExplodeBalls):
+	case strings.Contains(content, cmdMsgExplodeBalls):
 		sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
 	}
 }
