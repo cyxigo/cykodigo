@@ -149,6 +149,9 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	case itemGun:
 		chance = 70
 		content = fmt.Sprintf("%s tried to shoot %s with a gun and... ", sender.Mention(), target.Mention())
+	case itemBomb:
+		chance = 90
+		content = fmt.Sprintf("%s threw a bomb at %s and... ", sender.Mention(), target.Mention())
 	}
 
 	result := "failed! oops"

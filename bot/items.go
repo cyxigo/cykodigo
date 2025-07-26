@@ -16,6 +16,7 @@ const (
 
 	itemKnife = "knife"
 	itemGun   = "gun"
+	itemBomb  = "bomb"
 
 	itemDiamond = "diamond"
 )
@@ -25,16 +26,19 @@ var foodItems = []string{
 }
 
 var weaponItems = []string{
-	itemKnife, itemGun,
+	itemKnife, itemGun, itemBomb,
 }
 
 var shopItems = map[string]int{
-	itemCandy:   50,
-	itemApple:   100,
-	itemFish:    75,
-	itemCatnip:  150,
-	itemKnife:   200,
-	itemGun:     500,
+	itemCandy:  50,
+	itemApple:  100,
+	itemFish:   75,
+	itemCatnip: 150,
+
+	itemKnife: 200,
+	itemGun:   500,
+	itemBomb:  700,
+
 	itemDiamond: 1000,
 }
 
