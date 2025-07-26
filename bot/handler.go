@@ -260,7 +260,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	}
 
 	options := inter.ApplicationCommandData().Options
-	amount := (int)(options[0].Value.(float64))
+	amount := (int)(options[1].Value.(float64))
 
 	if amount <= 0 {
 		respond(sess, inter, "Transfer amount must be positive!!!", nil, false)

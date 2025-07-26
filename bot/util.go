@@ -26,7 +26,8 @@ func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, conten
 	if allowMentions {
 		data.AllowedMentions = &discordgo.MessageAllowedMentions{
 			Parse: []discordgo.AllowedMentionType{
-				discordgo.AllowedMentionTypeUsers},
+				discordgo.AllowedMentionTypeUsers,
+			},
 		}
 	}
 
