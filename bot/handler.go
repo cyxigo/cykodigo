@@ -709,6 +709,7 @@ func handleMsgMeow(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		"I heard a meow!",
 		"Meow :3",
 		"Meow",
+		"jrimbayum",
 	}
 
 	sess.ChannelMessageSend(msg.ChannelID, variants[rand.IntN(len(variants))])

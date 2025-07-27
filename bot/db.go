@@ -10,11 +10,17 @@ import (
 var DB *sql.DB
 
 func InitDB() {
+	path, ok := GetEnvVariable("DB_PATH")
+
+	if !ok {
+		return
+	}
+
 	var err error
-	DB, err = sql.Open("sqlite3", "database/main.db")
+	DB, err = sql.Open("sqlite3", path)
 
 	if err != nil {
-		log.Fatalf("Can't open 'database/main.db': %v", err)
+		log.Fatalf("Can't open '%s': %v", path, err)
 	}
 
 	_, err = DB.Exec(

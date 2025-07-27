@@ -10,7 +10,12 @@ import (
 
 // wake up cykodigo!
 func WakeUp() {
-	token := os.Getenv("TOKEN")
+	token, ok := GetEnvVariable("TOKEN")
+
+	if !ok {
+		return
+	}
+
 	sess, err := discordgo.New("Bot " + token)
 
 	if err != nil {
