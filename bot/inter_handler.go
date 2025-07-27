@@ -215,7 +215,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if lastWork.Valid && (currentTime-lastWork.Int64) < cooldown {
 		remaining := cooldown - (currentTime - lastWork.Int64)
-		content := fmt.Sprintf("You need to wait **%v** minutes before working again!!!", remaining/60)
+		content := fmt.Sprintf("You need to wait **%vm %vs** before working again!!!", remaining/60, remaining%60)
 
 		respond(sess, inter, content, nil, false)
 
@@ -400,8 +400,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if lastStealFail.Valid && (currentTime-lastStealFail.Int64) < cooldown {
 		remaining := cooldown - (currentTime - lastStealFail.Int64)
-		content := fmt.Sprintf("You need to wait **%v** minutes before stealing again after failure!!!",
-			remaining/60)
+		content := fmt.Sprintf("You need to wait **%vm %vs** before stealing again after failure!!!", remaining/60,
+			remaining%60)
 
 		respond(sess, inter, content, nil, false)
 
