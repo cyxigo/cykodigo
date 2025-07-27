@@ -210,7 +210,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	const cooldown = 30 * 60 // 30 minutes in seconds
+	const cooldown = 10 * 60 // 10 minutes in seconds
 	currentTime := time.Now().Unix()
 
 	if lastWork.Valid && (currentTime-lastWork.Int64) < cooldown {
