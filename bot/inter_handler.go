@@ -42,11 +42,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	contentFunc := func(sender, target *discordgo.User) string {
-		return fmt.Sprintf("%v meows at %v!", sender.Mention(), target.Mention())
-	}
-
-	handleTargetedCmd(sess, inter, contentFunc)
+	handleDoAtCmd(sess, inter, "meow")
 }
 
 func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -63,11 +59,7 @@ func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBarkAt(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	contentFunc := func(sender, target *discordgo.User) string {
-		return fmt.Sprintf("%v barks at %v!", sender.Mention(), target.Mention())
-	}
-
-	handleTargetedCmd(sess, inter, contentFunc)
+	handleDoAtCmd(sess, inter, "bark")
 }
 
 func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {

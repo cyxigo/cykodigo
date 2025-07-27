@@ -150,15 +150,14 @@ func getInterOptionalTarget(sess *discordgo.Session, inter *discordgo.Interactio
 
 // another util function for commands like
 // /meowat [member]
-func handleTargetedCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
-	contentFunc func(sender *discordgo.User, target *discordgo.User) string) {
+func handleDoAtCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, what string) {
 	sender, target, ok := getInterSenderAndTarget(sess, inter)
 
 	if !ok {
 		return
 	}
 
-	content := contentFunc(sender, target)
+	content := fmt.Sprintf("%v %v at %v!", sender.Mention(), what, target.Mention())
 	respond(sess, inter, content, nil, true)
 }
 
