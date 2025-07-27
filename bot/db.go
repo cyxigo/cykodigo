@@ -3,27 +3,22 @@ package bot
 import (
 	"database/sql"
 	"log"
+	"os"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DB *sql.DB
+// maps guild IDs to database connections
+var dbCache = make(map[string]*sql.DB)
 
-func InitDB() {
-	path, ok := getEnvVariable("DB_PATH")
+// databases file directory
+// this is where all databases created using getDB() will be stored
+const dbDir = "database"
 
-	if !ok {
-		return
-	}
-
-	var err error
-	DB, err = sql.Open("sqlite3", path)
-
-	if err != nil {
-		log.Fatalf("Can't open '%v': %v", path, err)
-	}
-
-	_, err = DB.Exec(
+// initializes a database by creating all the needed tables and indexes
+func initDB(db *sql.DB, name string) bool {
+	_, err := db.Exec(
 		`
 		CREATE TABLE IF NOT EXISTS balances (
 			user_id TEXT PRIMARY KEY,
@@ -39,6 +34,37 @@ func InitDB() {
 		`)
 
 	if err != nil {
-		log.Fatalf("Error creating '%v' tables: %v", path, err)
+		log.Printf("Failed to create '%v' tables: %v", name, err)
+		return false
 	}
+
+	return true
+}
+
+// returns the database for the guild with guildID
+// creates a database if it doesn't exist
+func getDB(guildID string) (*sql.DB, bool) {
+	if db, exists := dbCache[guildID]; exists {
+		return db, true
+	}
+
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		log.Printf("Failed to get database for guild '%v': %v", guildID, err)
+		return nil, false
+	}
+
+	dbPath := filepath.Join(dbDir, guildID+".db")
+	db, err := sql.Open("sqlite3", dbPath)
+
+	if err != nil {
+		log.Printf("Failed to open database for guild '%v': %v", guildID, err)
+		return nil, false
+	}
+
+	if !initDB(db, dbPath) {
+		return nil, false
+	}
+
+	dbCache[guildID] = db
+	return db, true
 }

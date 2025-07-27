@@ -218,7 +218,12 @@ func getUserBalance(tx *sql.Tx, userID string) int {
 // note: you should check for balance being less than amount
 func deductMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
 	amount int, cmd string) bool {
-	_, err := tx.Exec("UPDATE balances SET balance = balance - ? WHERE user_id = ?", amount, userID, amount)
+	_, err := tx.Exec(
+		`
+		UPDATE balances 
+		SET balance = balance - ? 
+		WHERE user_id = ?
+		`, amount, userID, amount)
 
 	if err != nil {
 		log.Printf("Deduction error in /%v: %v", cmd, err)
@@ -234,7 +239,13 @@ func deductMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx
 //
 // note: dont forget to "defer tx.Rollback()"
 func interBeginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, cmd string) (*sql.Tx, bool) {
-	tx, err := DB.Begin()
+	db, ok := getDB(inter.GuildID)
+
+	if !ok {
+		return nil, false
+	}
+
+	tx, err := db.Begin()
 
 	if err != nil {
 		log.Printf("Failed to begin transaction in /%v: %v", cmd, err)

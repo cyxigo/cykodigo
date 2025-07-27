@@ -84,6 +84,12 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 }
 
 func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	db, ok := getDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
 	sender, target, ok := getInterSenderAndTarget(sess, inter)
 
 	if !ok {
@@ -105,7 +111,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	}
 
 	count := 0
-	err := DB.QueryRow(
+	err := db.QueryRow(
 		`
 		SELECT COUNT(*) 
 		FROM inventory 
@@ -225,6 +231,12 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	db, ok := getDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
 	target, ok := getInterOptionalTarget(sess, inter)
 
 	if !ok {
@@ -232,7 +244,7 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	}
 
 	balance := 0
-	err := DB.QueryRow(
+	err := db.QueryRow(
 		`
 		SELECT balance 
 		FROM balances 
@@ -314,6 +326,12 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 }
 
 func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	db, ok := getDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
 	sender, target, ok := getInterSenderAndTarget(sess, inter)
 
 	if !ok {
@@ -343,7 +361,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	lastStealFail := sql.NullInt64{}
-	err := DB.QueryRow(
+	err := db.QueryRow(
 		`
 		SELECT last_steal_fail 
 		FROM balances 
@@ -476,9 +494,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	_, err := tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item)
-
-	if err != nil {
+	if _, err := tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item); err != nil {
 		log.Printf("Insert error in /inventory: %v", err)
 		respond(sess, inter, "Failed to add item to inventory :<", nil, false)
 
@@ -493,13 +509,19 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	db, ok := getDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
 	target, ok := getInterOptionalTarget(sess, inter)
 
 	if !ok {
 		return
 	}
 
-	rows, err := DB.Query(
+	rows, err := db.Query(
 		`
 		SELECT item 
 		FROM inventory 
@@ -550,7 +572,13 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 }
 
 func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	rows, err := DB.Query(
+	db, ok := getDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
+	rows, err := db.Query(
 		`
 		SELECT user_id, COUNT(*) AS diamond_count
 		FROM inventory
