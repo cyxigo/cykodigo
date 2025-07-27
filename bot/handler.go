@@ -51,7 +51,7 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	var pngFiles []string
+	pngFiles := []string{}
 
 	for _, file := range files {
 		if !file.IsDir() &&
@@ -168,7 +168,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	var lastWork sql.NullInt64
+	lastWork := sql.NullInt64{}
 	err := tx.QueryRow(
 		`
 		SELECT last_work 
@@ -341,7 +341,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	var lastStealFail sql.NullInt64
+	lastStealFail := sql.NullInt64{}
 	err := DB.QueryRow(
 		`
 		SELECT last_steal_fail 
@@ -428,7 +428,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	var builder strings.Builder
+	builder := strings.Builder{}
 	content := "**Shop!1!11!!**\n" +
 		"-# Use `/buy [item]` to buy something!!!"
 
@@ -536,7 +536,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 		return
 	}
 
-	var builder strings.Builder
+	builder := strings.Builder{}
 	content := fmt.Sprintf("%v inventory:\n", target.Mention())
 
 	for item, count := range items {
@@ -572,8 +572,8 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	position := 1
 
 	for rows.Next() {
-		var userID string
-		var count int
+		userID := ""
+		count := 0
 
 		if err := rows.Scan(&userID, &count); err != nil {
 			log.Printf("Failed to scan row in /leaderboard: %v", err)

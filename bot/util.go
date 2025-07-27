@@ -96,7 +96,7 @@ func getInterSender(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 // /meowat [member]
 func getInterTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate, required bool) (
 	*discordgo.User, bool) {
-	var target *discordgo.User
+	target := &discordgo.User{}
 	options := inter.ApplicationCommandData().Options
 
 	if len(options) == 0 && !required {
