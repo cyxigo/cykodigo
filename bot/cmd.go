@@ -3,27 +3,28 @@ package bot
 import "github.com/bwmarrin/discordgo"
 
 const (
-	cmdHelp      = "help"
-	cmdMe        = "me"
-	cmdMeow      = "meow"
-	cmdMeowat    = "meowat"
-	cmdBark      = "bark"
-	cmdBarkat    = "barkat"
-	cmdDoflip    = "doflip"
-	cmdExplode   = "explode"
-	cmdSpin      = "spin"
-	cmdCat       = "cat"
-	cmdCart      = "cart"
-	cmdRoulette  = "roulette"
-	cmdAssault   = "assault"
-	cmdWork      = "work"
-	cmdBalance   = "balance"
-	cmdTransfer  = "transfer"
-	cmdSteal     = "steal"
-	cmdShop      = "shop"
-	cmdBuy       = "buy"
-	cmdInventory = "inventory"
-	cmdEat       = "eat"
+	cmdHelp        = "help"
+	cmdMe          = "me"
+	cmdMeow        = "meow"
+	cmdMeowat      = "meowat"
+	cmdBark        = "bark"
+	cmdBarkat      = "barkat"
+	cmdDoflip      = "doflip"
+	cmdExplode     = "explode"
+	cmdSpin        = "spin"
+	cmdCat         = "cat"
+	cmdCart        = "cart"
+	cmdRoulette    = "roulette"
+	cmdAssault     = "assault"
+	cmdWork        = "work"
+	cmdBalance     = "balance"
+	cmdTransfer    = "transfer"
+	cmdSteal       = "steal"
+	cmdShop        = "shop"
+	cmdBuy         = "buy"
+	cmdInventory   = "inventory"
+	cmdLeaderboard = "leaderboard"
+	cmdEat         = "eat"
 
 	// msg means that this is message content command
 	// same for handlers: handleMsg
@@ -188,6 +189,10 @@ var cmds = []*discordgo.ApplicationCommand{
 				Required:    false,
 			},
 		},
+	},
+	{
+		Name:        cmdLeaderboard,
+		Description: "Leaderboard! Compete!!! Diamonds!1!11!!",
 	},
 	{
 		Name:        cmdEat,

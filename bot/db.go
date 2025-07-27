@@ -10,7 +10,7 @@ import (
 var DB *sql.DB
 
 func InitDB() {
-	path, ok := GetEnvVariable("DB_PATH")
+	path, ok := getEnvVariable("DB_PATH")
 
 	if !ok {
 		return
@@ -20,7 +20,7 @@ func InitDB() {
 	DB, err = sql.Open("sqlite3", path)
 
 	if err != nil {
-		log.Fatalf("Can't open '%s': %v", path, err)
+		log.Fatalf("Can't open '%v': %v", path, err)
 	}
 
 	_, err = DB.Exec(
@@ -39,6 +39,6 @@ func InitDB() {
 		`)
 
 	if err != nil {
-		log.Fatalf("Error creating 'main.db' tables: %v", err)
+		log.Fatalf("Error creating '%v' tables: %v", path, err)
 	}
 }

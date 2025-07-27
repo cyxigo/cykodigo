@@ -58,7 +58,7 @@ func getItemFromInterOption(sess *discordgo.Session, inter *discordgo.Interactio
 	price, exists := shopItems[item]
 
 	if !exists {
-		content := fmt.Sprintf("There's no item **%s**!!!", item)
+		content := fmt.Sprintf("There's no item **%v**!!!", item)
 		respond(sess, inter, content, nil, false)
 
 		return "", 0, false

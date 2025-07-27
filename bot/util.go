@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -14,6 +15,10 @@ import (
 // target - person who was specified in [member] option
 //
 // also, i dont why but this file is really commented :p
+
+const (
+	defaultEmbedColor = 0xFF7B00
+)
 
 // util function to send interaction responses
 func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, files []*discordgo.File,
@@ -35,6 +40,39 @@ func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, conten
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: data,
 	})
+}
+
+// util function to send interaction responses with embeds
+func respondEmbed(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
+	files []*discordgo.File, embeds []*discordgo.MessageEmbed, allowMentions bool) {
+	data := &discordgo.InteractionResponseData{
+		Content: content,
+		Files:   files,
+		Embeds:  embeds,
+	}
+
+	if allowMentions {
+		data.AllowedMentions = &discordgo.MessageAllowedMentions{
+			Parse: []discordgo.AllowedMentionType{
+				discordgo.AllowedMentionTypeUsers,
+			},
+		}
+	}
+
+	sess.InteractionRespond(inter.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: data,
+	})
+}
+
+// util function for creating embeds
+func embedContent(content string) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{
+		Description: content,
+		Color:       defaultEmbedColor,
+	}
+
+	return embed
 }
 
 // util function for getting interaction sender cus yes
@@ -125,12 +163,12 @@ func handleTargetedCmd(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 // util function for handling commands that send image like
 // /me
-func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, imgName string,
-	imgPath string) {
+// can be also used for sending gifs
+func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, imgPath string) {
 	file, err := os.Open(imgPath)
 
 	if err != nil {
-		log.Printf("Error opening '%s': %v", imgName, err)
+		log.Printf("Error opening '%v': %v", imgPath, err)
 		respond(sess, inter, "Couldn't open image :<", nil, false)
 
 		return
@@ -138,10 +176,21 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 
 	defer file.Close()
 
-	respond(sess, inter, content, []*discordgo.File{{
+	imgName := filepath.Base(imgPath)
+	discordFile := &discordgo.File{
 		Name:   imgName,
 		Reader: file,
-	}}, false)
+	}
+	description := fmt.Sprintf("**%v**", content)
+	embed := &discordgo.MessageEmbed{
+		Description: description,
+		Color:       defaultEmbedColor,
+		Image: &discordgo.MessageEmbedImage{
+			URL: "attachment://" + imgName,
+		},
+	}
+
+	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
 }
 
 // util function for getting user balances in sql transactions
@@ -149,7 +198,12 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 // cus /balance doesnt need sql transactions since its just one query
 func getUserBalance(tx *sql.Tx, userID string) int {
 	balance := 0
-	err := tx.QueryRow("SELECT balance FROM balances WHERE user_id = ?", userID).Scan(&balance)
+	err := tx.QueryRow(
+		`
+		SELECT balance
+		FROM balances 
+		WHERE user_id = ?
+		`, userID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Query error in getUserBalance: %v", err)
@@ -168,7 +222,7 @@ func deductMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx
 	_, err := tx.Exec("UPDATE balances SET balance = balance - ? WHERE user_id = ?", amount, userID, amount)
 
 	if err != nil {
-		log.Printf("Deduction error in /%s: %v", cmd, err)
+		log.Printf("Deduction error in /%v: %v", cmd, err)
 		respond(sess, inter, "Failed to deduct money :<", nil, false)
 
 		return false
@@ -184,9 +238,9 @@ func interBeginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, c
 	tx, err := DB.Begin()
 
 	if err != nil {
-		log.Printf("Failed to begin transaction in /%s: %v", cmd, err)
+		log.Printf("Failed to begin transaction in /%v: %v", cmd, err)
 
-		content := fmt.Sprintf("Failed to start /%s :<", cmd)
+		content := fmt.Sprintf("Failed to start /%v :<", cmd)
 		respond(sess, inter, content, nil, false)
 
 		return nil, false
@@ -198,9 +252,9 @@ func interBeginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, c
 // util function for commiting sql transactions in interactions
 func interCommitTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, cmd string) bool {
 	if err := tx.Commit(); err != nil {
-		log.Printf("Commit error in /%s: %v", cmd, err)
+		log.Printf("Commit error in /%v: %v", cmd, err)
 
-		content := fmt.Sprintf("Failed to finish /%s :<", cmd)
+		content := fmt.Sprintf("Failed to finish /%v :<", cmd)
 		respond(sess, inter, content, nil, false)
 
 		return false

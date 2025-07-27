@@ -14,7 +14,7 @@ import (
 
 func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
-		return fmt.Sprintf("%s meows at %s!", sender.Mention(), target.Mention())
+		return fmt.Sprintf("%v meows at %v!", sender.Mention(), target.Mention())
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
@@ -35,7 +35,7 @@ func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 func handleBarkAt(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	contentFunc := func(sender, target *discordgo.User) string {
-		return fmt.Sprintf("%s barks at %s!", sender.Mention(), target.Mention())
+		return fmt.Sprintf("%v barks at %v!", sender.Mention(), target.Mention())
 	}
 
 	handleTargetedCmd(sess, inter, contentFunc)
@@ -66,22 +66,9 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	img := pngFiles[rand.IntN(len(pngFiles))]
-	filePath := fmt.Sprintf("res/cat/%s", img)
-	file, err := os.Open(filePath)
+	path := fmt.Sprintf("res/cat/%v", img)
 
-	if err != nil {
-		log.Printf("Error opening %s: %v", img, err)
-		respond(sess, inter, "Couldn't open cat picture :<", nil, false)
-
-		return
-	}
-
-	defer file.Close()
-
-	respond(sess, inter, "Cat!", []*discordgo.File{{
-		Name:   img,
-		Reader: file,
-	}}, false)
+	handleImageCmd(sess, inter, "Cat!", path)
 }
 
 func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -110,7 +97,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	}
 
 	if !isWeapon(item) {
-		content := fmt.Sprintf("Item **%s** isn't a weapon!!!", item)
+		content := fmt.Sprintf("Item **%v** isn't a weapon!!!", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -119,19 +106,21 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	count := 0
 	err := DB.QueryRow(
 		`
-		SELECT COUNT(*) FROM inventory WHERE user_id = ? AND item = ?
+		SELECT COUNT(*) 
+		FROM inventory 
+		WHERE user_id = ? AND item = ?
 		`,
 		sender.ID, item).Scan(&count)
 
 	if err != nil {
-		log.Printf("Count error in /assault: %v", err)
+		log.Printf("Failed to scan row in /assault: %v", err)
 		respond(sess, inter, "Failed to check inventory :<", nil, false)
 
 		return
 	}
 
 	if count == 0 {
-		respond(sess, inter, fmt.Sprintf("You don't have **%s** in your inventory!!!", item), nil, false)
+		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory!!!", item), nil, false)
 		return
 	}
 
@@ -145,13 +134,13 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	switch item {
 	case itemKnife:
 		chance = 20
-		content = fmt.Sprintf("%s tried to stab %s with a knife and... ", sender.Mention(), target.Mention())
+		content = fmt.Sprintf("%v tried to stab %v with a knife and... ", sender.Mention(), target.Mention())
 	case itemGun:
 		chance = 70
-		content = fmt.Sprintf("%s tried to shoot %s with a gun and... ", sender.Mention(), target.Mention())
+		content = fmt.Sprintf("%v tried to shoot %v with a gun and... ", sender.Mention(), target.Mention())
 	case itemBomb:
 		chance = 90
-		content = fmt.Sprintf("%s threw a bomb at %s and... ", sender.Mention(), target.Mention())
+		content = fmt.Sprintf("%v threw a bomb at %v and... ", sender.Mention(), target.Mention())
 	}
 
 	result := "failed! oops"
@@ -180,10 +169,15 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	defer tx.Rollback()
 
 	var lastWork sql.NullInt64
-	err := tx.QueryRow("SELECT last_work FROM balances WHERE user_id = ?", sender.ID).Scan(&lastWork)
+	err := tx.QueryRow(
+		`
+		SELECT last_work 
+		FROM balances 
+		WHERE user_id = ?
+		`, sender.ID).Scan(&lastWork)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Cooldown check error in /work: %v", err)
+		log.Printf("Failed to scan row in /work: %v", err)
 		respond(sess, inter, "Failed to check work cooldown :<", nil, false)
 
 		return
@@ -194,7 +188,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if lastWork.Valid && (currentTime-lastWork.Int64) < cooldown {
 		remaining := cooldown - (currentTime - lastWork.Int64)
-		content := fmt.Sprintf("You need to wait **%d** minutes before working again!!!", remaining/60)
+		content := fmt.Sprintf("You need to wait **%v** minutes before working again!!!", remaining/60)
 
 		respond(sess, inter, content, nil, false)
 
@@ -225,7 +219,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	content := fmt.Sprintf("You worked and got **%d** money!1!11!!", money)
+	content := fmt.Sprintf("You worked and got **%v** money!1!11!!", money)
 	respond(sess, inter, content, nil, false)
 }
 
@@ -237,16 +231,21 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	}
 
 	balance := 0
-	err := DB.QueryRow("SELECT balance FROM balances WHERE user_id = ?", target.ID).Scan(&balance)
+	err := DB.QueryRow(
+		`
+		SELECT balance 
+		FROM balances 
+		WHERE user_id = ?
+		`, target.ID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Database error in /balance: %v", err)
+		log.Printf("Failed to scan row in /balance: %v", err)
 		respond(sess, inter, "Failed to check balance :<", nil, false)
 
 		return
 	}
 
-	content := fmt.Sprintf("%s's balance: **%d** money!1!11!!", target.Mention(), balance)
+	content := fmt.Sprintf("%v's balance: **%v** money!1!11!!", target.Mention(), balance)
 	respond(sess, inter, content, nil, true)
 }
 
@@ -309,7 +308,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	response := fmt.Sprintf("%s transferred %d money to %s!", sender.Mention(), amount, target.Mention())
+	response := fmt.Sprintf("%v transferred %v money to %v!", sender.Mention(), amount, target.Mention())
 	respond(sess, inter, response, nil, true)
 }
 
@@ -336,17 +335,22 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	targetBalance := getUserBalance(tx, target.ID)
 
 	if targetBalance <= 0 {
-		content := fmt.Sprintf("%s is **broke!** Nothing to steal", target.Mention())
+		content := fmt.Sprintf("%v is **broke!** Nothing to steal", target.Mention())
 		respond(sess, inter, content, nil, true)
 
 		return
 	}
 
 	var lastStealFail sql.NullInt64
-	err := DB.QueryRow("SELECT last_steal_fail FROM balances WHERE user_id = ?", sender.ID).Scan(&lastStealFail)
+	err := DB.QueryRow(
+		`
+		SELECT last_steal_fail 
+		FROM balances 
+		WHERE user_id = ?
+		`, sender.ID).Scan(&lastStealFail)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Cooldown check error in /steal: %v", err)
+		log.Printf("Failed to scan row in /steal: %v", err)
 		respond(sess, inter, "Failed to check steal cooldown :<", nil, false)
 
 		return
@@ -357,7 +361,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if lastStealFail.Valid && (currentTime-lastStealFail.Int64) < cooldown {
 		remaining := cooldown - (currentTime - lastStealFail.Int64)
-		content := fmt.Sprintf("You need to wait **%d** minutes before stealing again after failure!!!",
+		content := fmt.Sprintf("You need to wait **%v** minutes before stealing again after failure!!!",
 			remaining/60)
 
 		respond(sess, inter, content, nil, false)
@@ -393,7 +397,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content = fmt.Sprintf("You successfully stole **%d** money from %s!", stealAmount, target.Mention())
+		content = fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
 	} else {
 		const penalty = 20
 		_, err := tx.Exec(
@@ -413,7 +417,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content = fmt.Sprintf("You failed to steal from %s and lost **%d** money! :<", target.Mention(), penalty)
+		content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<", target.Mention(), penalty)
 	}
 
 	if !interCommitTx(sess, inter, tx, cmdSteal) {
@@ -425,15 +429,16 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	var builder strings.Builder
-	builder.WriteString("# Shop!1!11!!\n")
-	builder.WriteString("> Use /buy [item] to buy something!!!\n")
+	content := "**Shop!1!11!!**\n" +
+		"-# Use `/buy [item]` to buy something!!!"
 
 	for item, price := range shopItems {
-		itemString := fmt.Sprintf("- %s: %d money\n", item, price)
+		itemString := fmt.Sprintf("- %v: %v money\n", item, price)
 		builder.WriteString(itemString)
 	}
 
-	respond(sess, inter, builder.String(), nil, false)
+	embed := embedContent(builder.String())
+	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
 func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -460,7 +465,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	balance := getUserBalance(tx, sender.ID)
 
 	if balance < price {
-		content := fmt.Sprintf("Too broke for **%s**, go work!!!", item)
+		content := fmt.Sprintf("Too broke for **%v**, go work!!!", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -483,7 +488,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	respond(sess, inter, fmt.Sprintf("You bought **%s** for **%d** money!", item, price), nil, false)
+	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money!", item, price), nil, false)
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -493,7 +498,12 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 		return
 	}
 
-	rows, err := DB.Query("SELECT item FROM inventory WHERE user_id = ?", target.ID)
+	rows, err := DB.Query(
+		`
+		SELECT item 
+		FROM inventory 
+		WHERE user_id = ?
+		`, target.ID)
 
 	if err != nil {
 		log.Printf("Query error in /inventory: %v", err)
@@ -512,6 +522,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 		item := ""
 
 		if err := rows.Scan(&item); err != nil {
+			log.Printf("Failed to scan row in /inventory: %v", err)
 			continue
 		}
 
@@ -519,23 +530,89 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	}
 
 	if len(items) == 0 {
-		content := fmt.Sprintf("%s inventory: oops! such an empty", target.Mention())
+		content := fmt.Sprintf("%v inventory: oops! such an empty", target.Mention())
 		respond(sess, inter, content, nil, true)
 
 		return
 	}
 
 	var builder strings.Builder
-
-	inventoryString := fmt.Sprintf("%s inventory:\n", target.Mention())
-	builder.WriteString(inventoryString)
+	content := fmt.Sprintf("%v inventory:\n", target.Mention())
 
 	for item, count := range items {
-		itemString := fmt.Sprintf("- %s ×%d\n", item, count)
+		itemString := fmt.Sprintf("- %v ×%v\n", item, count)
 		builder.WriteString(itemString)
 	}
 
-	respond(sess, inter, builder.String(), nil, true)
+	embed := embedContent(builder.String())
+	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
+}
+
+func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	rows, err := DB.Query(
+		`
+		SELECT user_id, COUNT(*) AS diamond_count
+		FROM inventory
+		WHERE item = ?
+		GROUP BY user_id
+		ORDER BY diamond_count DESC
+		LIMIT 10
+		`, itemDiamond)
+
+	if err != nil {
+		log.Printf("Query error in /leaderboard: %v", err)
+		respond(sess, inter, "Failed to check leaderboard :<", nil, false)
+
+		return
+	}
+
+	defer rows.Close()
+
+	leaderboard := []string{}
+	position := 1
+
+	for rows.Next() {
+		var userID string
+		var count int
+
+		if err := rows.Scan(&userID, &count); err != nil {
+			log.Printf("Failed to scan row in /leaderboard: %v", err)
+			continue
+		}
+
+		user, err := sess.User(userID)
+		displayName := "Unknown user"
+
+		if err == nil {
+			displayName = user.Username
+		} else {
+			log.Printf("Failed to get display name for '%v' in /leaderboard: %v", userID, err)
+		}
+
+		entry := fmt.Sprintf(
+			"%v. **%v** - `%v` diamonds",
+			position,
+			displayName,
+			count,
+		)
+
+		leaderboard = append(leaderboard, entry)
+		position++
+	}
+
+	if len(leaderboard) == 0 {
+		content := "No one has diamonds yet\n" +
+			"Such an empty leaderboard\n" +
+			"Buy some with `/buy diamond`!!!"
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	content := "**Diamond Leaderboard!1!11!!**\n" +
+		"-# Buy some with `/buy diamond`!!!"
+	embed := embedContent(strings.Join(leaderboard, "\n"))
+	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
 func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -552,7 +629,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	if !isFood(item) {
-		content := fmt.Sprintf("You can't eat **%s**!!!", item)
+		content := fmt.Sprintf("You can't eat **%v**!!!", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -569,26 +646,32 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	count := 0
 	err := tx.QueryRow(
 		`
-		SELECT COUNT(*) FROM inventory WHERE user_id = ? AND item = ?
+		SELECT COUNT(*) 
+		FROM inventory
+		WHERE user_id = ? AND item = ?
 		`,
 		sender.ID, item).Scan(&count)
 
 	if err != nil {
-		log.Printf("Count error in /eat: %v", err)
+		log.Printf("Failed to scan row in /eat: %v", err)
 		respond(sess, inter, "Failed to check inventory :<", nil, false)
 
 		return
 	}
 
 	if count == 0 {
-		respond(sess, inter, fmt.Sprintf("You don't have **%s** in your inventory!!!", item), nil, false)
+		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory!!!", item), nil, false)
 		return
 	}
 
 	_, err = tx.Exec(
 		`
-		DELETE FROM inventory WHERE rowid = (
-			SELECT rowid FROM inventory WHERE user_id = ? AND item = ? LIMIT 1
+		DELETE FROM inventory 
+		WHERE rowid = (
+			SELECT rowid 
+			FROM inventory 
+			WHERE user_id = ? AND item = ? 
+			LIMIT 1
 		)
 		`,
 		sender.ID, item)
@@ -604,7 +687,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	content := fmt.Sprintf("You ate **%s**! Yummy!", item)
+	content := fmt.Sprintf("You ate **%v**! Yummy!", item)
 	respond(sess, inter, content, nil, false)
 }
 
@@ -621,7 +704,7 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	case cmdHelp:
 		respond(sess, inter, "I don't know........ ummmm...... awkwar.......", nil, false)
 	case cmdMe:
-		handleImageCmd(sess, inter, "Me!", "me.png", "res/me.png")
+		handleImageCmd(sess, inter, "Me!", "res/me.png")
 	case cmdMeow:
 		respond(sess, inter, "Meow!", nil, false)
 	case cmdMeowat:
@@ -631,17 +714,17 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	case cmdBarkat:
 		handleBarkAt(sess, inter)
 	case cmdDoflip:
-		handleImageCmd(sess, inter, "Woah!", "flip.png", "res/flip.png")
+		handleImageCmd(sess, inter, "Woah!", "res/flip.png")
 	case cmdExplode:
-		handleImageCmd(sess, inter, "WHAAAAAAAA-", "boom.png", "res/boom.png")
+		handleImageCmd(sess, inter, "WHAAAAAAAA-", "res/boom.png")
 	case cmdSpin:
 		// uhh yes im using handleImageCmd for sending a gif
 		// and what? what you gonna do?
-		handleImageCmd(sess, inter, "Wooooooo", "spin.gif", "res/spin.gif")
+		handleImageCmd(sess, inter, "Wooooooo", "res/spin.gif")
 	case cmdCat:
 		handleCat(sess, inter)
 	case cmdCart:
-		handleImageCmd(sess, inter, "Cart!", "cart.png", "res/cart.png")
+		handleImageCmd(sess, inter, "Cart!", "res/cart.png")
 	case cmdRoulette:
 		handleRoulette(sess, inter)
 	case cmdAssault:
@@ -660,6 +743,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleBuy(sess, inter)
 	case cmdInventory:
 		handleInventory(sess, inter)
+	case cmdLeaderboard:
+		handleLeaderboard(sess, inter)
 	case cmdEat:
 		handleEat(sess, inter)
 	}

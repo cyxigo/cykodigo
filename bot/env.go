@@ -15,11 +15,11 @@ func InitEnv() {
 
 // i COULD just return empty string as a sign of failure but you know
 // i like returning "ok" bool
-func GetEnvVariable(name string) (string, bool) {
+func getEnvVariable(name string) (string, bool) {
 	variable := os.Getenv(name)
 
 	if variable == "" {
-		log.Printf("Couldn't find variable '%s' in .env file", name)
+		log.Printf("Couldn't find variable '%v' in .env file", name)
 		return "", false
 	}
 

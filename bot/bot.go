@@ -10,7 +10,7 @@ import (
 
 // wake up cykodigo!
 func WakeUp() {
-	token, ok := GetEnvVariable("TOKEN")
+	token, ok := getEnvVariable("TOKEN")
 
 	if !ok {
 		return
