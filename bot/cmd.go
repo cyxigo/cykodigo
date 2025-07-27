@@ -32,6 +32,7 @@ const (
 	cmdMsgCrazy        = "crazy"
 	cmdMsgExplodeBalls = "cykodigo explode balls"
 	cmdMsgGlamptastic  = "glamptastic"
+	cmdMsgNature       = "nature"
 )
 
 // slash commands, looooooooooong list of them

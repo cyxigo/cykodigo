@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -720,7 +721,7 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	case cmdSpin:
 		// uhh yes im using handleImageCmd for sending a gif
 		// and what? what you gonna do?
-		handleImageCmd(sess, inter, "Wooooooo", "res/spin.gif")
+		handleImageCmd(sess, inter, "Wooooooo", "res/gif/spin.gif")
 	case cmdCat:
 		handleCat(sess, inter)
 	case cmdCart:
@@ -800,6 +801,41 @@ func handleMsgMeow(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 	sess.ChannelMessageSend(msg.ChannelID, variants[rand.IntN(len(variants))])
 }
 
+func handleMsgNature(sess *discordgo.Session, msg *discordgo.MessageCreate) {
+	imgPath := "res/gif/nature.gif"
+	file, err := os.Open(imgPath)
+
+	if err != nil {
+		log.Printf("Error opening '%v': %v", imgPath, err)
+		sess.ChannelMessageSend(msg.ChannelID, "Couldn't open image :<")
+
+		return
+	}
+
+	defer file.Close()
+
+	// yeah.. all of this is a bunch of code ripped out from handleImageCmd
+	// ¯\_(ツ)_/¯
+	imgName := filepath.Base(imgPath)
+	discordFile := &discordgo.File{
+		Name:   imgName,
+		Reader: file,
+	}
+	embed := &discordgo.MessageEmbed{
+		Description: "**RULES OF NATURE!!!**",
+		Color:       defaultEmbedColor,
+		Image: &discordgo.MessageEmbedImage{
+			URL: "attachment://" + imgName,
+		},
+	}
+	msgSend := &discordgo.MessageSend{
+		Embed: embed,
+		File:  discordFile,
+	}
+
+	sess.ChannelMessageSendComplex(msg.ChannelID, msgSend)
+}
+
 // handler for messages content
 func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 	if msg.Author.ID == sess.State.User.ID {
@@ -824,5 +860,7 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
 	case strings.Contains(content, cmdMsgGlamptastic):
 		sess.ChannelMessageSend(msg.ChannelID, "glamptastic!")
+	case strings.Contains(content, cmdMsgNature):
+		handleMsgNature(sess, msg)
 	}
 }

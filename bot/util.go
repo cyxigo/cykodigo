@@ -161,8 +161,7 @@ func handleTargetedCmd(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	respond(sess, inter, content, nil, true)
 }
 
-// util function for handling commands that send image like
-// /me
+// util function for handling commands in interactions that send image
 // can be also used for sending gifs
 func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, imgPath string) {
 	file, err := os.Open(imgPath)
