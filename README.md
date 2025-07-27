@@ -11,7 +11,7 @@ I don't think building, dependencies and etc. needs an explanation, building is 
 If you really want to use bot source code (for some reason), make sure you:
 
 - Credit me
-- Change paths to resources.
+- Change the paths to the resources or add your own with the same paths.
   Resources are NOT included in this repository for legal reasons and blah blah
 
 I'm not so good at Go, I picked it up just for fun, so if you see some bad code or bad practice feel free to open an issue ^\_^

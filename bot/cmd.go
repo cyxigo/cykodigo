@@ -39,7 +39,7 @@ const (
 var cmds = []*discordgo.ApplicationCommand{
 	{
 		Name:        cmdHelp,
-		Description: "This... will not help actually",
+		Description: "This... will actually help, well, maybe",
 	},
 	{
 		Name:        cmdMe,

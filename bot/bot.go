@@ -22,6 +22,8 @@ func WakeUp() {
 		log.Fatalf("Can't create session: %v", err)
 	}
 
+	sess.StateEnabled = true
+
 	sess.AddHandler(InterHandler)
 	sess.AddHandler(MsgHandler)
 

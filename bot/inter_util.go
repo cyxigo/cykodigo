@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -233,6 +234,23 @@ func deductMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx
 	}
 
 	return true
+}
+
+// util function for getting an item from command option
+// returns item and its price
+func getItemFromInterOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, idx int) (
+	string, int, bool) {
+	item := strings.ToLower(inter.ApplicationCommandData().Options[idx].StringValue())
+	price, exists := shopItems[item]
+
+	if !exists {
+		content := fmt.Sprintf("There's no item **%v**!!!", item)
+		respond(sess, inter, content, nil, false)
+
+		return "", 0, false
+	}
+
+	return item, price, true
 }
 
 // util function for beginning sql transactions in interactions
