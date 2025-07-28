@@ -28,7 +28,7 @@ func getUserBalance(tx *sql.Tx, userID string) int {
 // util function to get info about a users meth effect status in sql transactions
 // returns whether the user is currently high and the effect end time
 func getUserHighInfo(tx *sql.Tx, userID string) (bool, int64) {
-	endTime := sql.NullInt64{}
+	endTime := int64(0)
 	err := tx.QueryRow(
 		`
 		SELECT end_time 
@@ -40,9 +40,5 @@ func getUserHighInfo(tx *sql.Tx, userID string) (bool, int64) {
 		log.Printf("Query error in isUserHigh: %v", err)
 	}
 
-	if !endTime.Valid {
-		return false, 0
-	}
-
-	return time.Now().Unix() < endTime.Int64, endTime.Int64
+	return time.Now().Unix() < endTime, endTime
 }

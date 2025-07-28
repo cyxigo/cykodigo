@@ -14,7 +14,7 @@ import (
 
 func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	features := "**Features**\n" +
-		"This bot isn't so serious. But he has money system!1!11!!\n" +
+		"This bot isn't so serious. But he has money system!\n" +
 		"You can work using `/work` command, buy stuff using `/buy`, check your balance using `/balance` " +
 		"and check stuff that you bought using `/inventory`\n" +
 		"You can also steal money from people using `/steal` and transfer money using `/transfer`"
@@ -24,14 +24,14 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"Meow-meow!"
 	website := "**My website!**\n" +
 		"I don't think anyone will look in here, but [here](https://cyxigo.github.io/cykodigo-io/) " +
-		"my super duper website!1!11!!\n" +
+		fmt.Sprintf("my super duper website %s\n", emojiCykodigo) +
 		"P.S for nerds: Terms of Service and Privacy Policy are also there"
 
 	featureEmbed := embedText(features)
 	otherFeaturesEmbed := embedText(otherFeatures)
 	websiteEmbed := embedText(website)
 
-	content := "**Super-duper manual!1!11!!**\n" +
+	content := fmt.Sprintf("**Super-duper manual %s**\n", emojiCykodigo) +
 		"-# Copyright (c) 2025 cyxigo"
 
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{
@@ -201,7 +201,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	lastWork := sql.NullInt64{}
+	lastWork := int64(0)
 	err := tx.QueryRow(
 		`
 		SELECT last_work 
@@ -219,8 +219,8 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	const cooldown = 10 * 60 // 10 minutes in seconds
 	currentTime := time.Now().Unix()
 
-	if lastWork.Valid && (currentTime-lastWork.Int64) < cooldown {
-		remaining := cooldown - (currentTime - lastWork.Int64)
+	if currentTime-lastWork < cooldown {
+		remaining := cooldown - (currentTime - lastWork)
 		content := fmt.Sprintf("You need to wait **%vm %vs** before working again!!!", remaining/60, remaining%60)
 
 		respond(sess, inter, content, nil, false)
@@ -261,10 +261,11 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	content := ""
 
 	if isHigh {
-		content = "You are **high**!1!11!! Actually, it's not good... Money from work has decreased!!!\n"
+		content = fmt.Sprintf("You are **high** %s Actually, it's not good... Money from work has decreased!!!\n",
+			emojiCatr)
 	}
 
-	content += fmt.Sprintf("You worked and got **%v** money!1!11!!", money)
+	content += fmt.Sprintf("You worked and got **%v** money!", money)
 	respond(sess, inter, content, nil, false)
 }
 
@@ -296,7 +297,7 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	content := fmt.Sprintf("%v's balance: **%v** money!1!11!!", target.Mention(), balance)
+	content := fmt.Sprintf("%v's balance: **%v** money", target.Mention(), balance)
 	respond(sess, inter, content, nil, true)
 }
 
@@ -359,7 +360,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	response := fmt.Sprintf("%v transferred %v money to %v!1!11!!", sender.Mention(), amount, target.Mention())
+	response := fmt.Sprintf("%v transferred %v money to %v", sender.Mention(), amount, target.Mention())
 	respond(sess, inter, response, nil, true)
 }
 
@@ -398,7 +399,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	lastStealFail := sql.NullInt64{}
+	lastStealFail := int64(0)
 	err := db.QueryRow(
 		`
 		SELECT last_steal_fail 
@@ -416,8 +417,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	const cooldown = 20 * 60
 	currentTime := time.Now().Unix()
 
-	if lastStealFail.Valid && (currentTime-lastStealFail.Int64) < cooldown {
-		remaining := cooldown - (currentTime - lastStealFail.Int64)
+	if currentTime-lastStealFail < cooldown {
+		remaining := cooldown - (currentTime - lastStealFail)
 		content := fmt.Sprintf("You need to wait **%vm %vs** before stealing again after failure!!!", remaining/60,
 			remaining%60)
 
@@ -431,7 +432,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	isHigh, _ := getUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = "You are **high**!1!11!! Chances of successful steal has increased...\n"
+		content = fmt.Sprintf("You are **high**, Chances of successful steal has increased %s...\n", emojiCatr)
 		successChance = 80
 	}
 
@@ -460,7 +461,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content += fmt.Sprintf("You successfully stole **%v** money from %v!1!11!!", stealAmount, target.Mention())
+		content += fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
 	} else {
 		const penalty = 20
 		_, err := tx.Exec(
@@ -481,7 +482,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		}
 
 		content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
-			"**Pro tip:** being high increases chances of a successful steal!1!11!!", target.Mention(), penalty)
+			"**Pro tip:** being high increases chances of a successful steal %s",
+			target.Mention(), penalty, emojiCatr)
 	}
 
 	if !interCommitTx(sess, inter, tx, cmdSteal) {
@@ -493,7 +495,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	builder := strings.Builder{}
-	content := "**Shop!1!11!!**\n" +
+	content := fmt.Sprintf("**Shop %s**\n", emojiCykodigo) +
 		"-# Use `/buy [item]` to buy something!!!"
 
 	for item, price := range shopItems {
@@ -550,7 +552,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money!1!11!!", item, price), nil, false)
+	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money", item, price), nil, false)
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -683,7 +685,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		return
 	}
 
-	content := "**Diamond Leaderboard!1!11!!**\n" +
+	content := "**Diamond Leaderboard**\n" +
 		"-# Buy some with `/buy diamond`!!!"
 	embed := embedText(strings.Join(leaderboard, "\n"))
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
@@ -769,9 +771,9 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			INSERT INTO meth_effects(user_id, end_time)
 			VALUES(?, ?)
 			ON CONFLICT(user_id) DO UPDATE SET
-				end_time = end_time + ?
+				end_time = MAX(?, end_time) + ?
 			`,
-			sender.ID, newEndTime, effectDuration)
+			sender.ID, newEndTime, currentTime, effectDuration)
 
 		if err != nil {
 			log.Printf("Failed to update meth effect in /eat: %v", err)
@@ -780,7 +782,23 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		duration = newEndTime - currentTime
+		updatedEndTime := int64(0)
+		err = tx.QueryRow(
+			`
+			SELECT end_time 
+			FROM meth_effects 
+			WHERE user_id = ?
+			`,
+			sender.ID).Scan(&updatedEndTime)
+
+		if err != nil {
+			log.Printf("Failed to get updated end time in /eat: %v", err)
+			respond(sess, inter, "Failed to get high :<", nil, false)
+
+			return
+		}
+
+		duration = updatedEndTime - currentTime
 	} else {
 		_, endTime := getUserHighInfo(tx, sender.ID)
 		duration = endTime - time.Now().Unix()
@@ -792,10 +810,10 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if item == itemMeth {
 		content := fmt.Sprintf("You ate %v! Wowowowowowowowowowo the world is spinning wowowowowowo...\n\n"+
-			"You're now high for %vm %vs!1!11!!", item, duration/60, duration%60)
+			"You're now high for %vm %vs %s", item, duration/60, duration%60, emojiCatr)
 		handleImageCmd(sess, inter, content, "res/gif/spin.gif")
 	} else {
-		message := "Yummy!"
+		message := "Yummy! " + emojiCykodigo
 
 		switch item {
 		case itemKnife:
