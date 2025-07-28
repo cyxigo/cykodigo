@@ -157,6 +157,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	chance := 0
 	content := ""
+	successMessage := "killed them!"
 
 	switch item {
 	case itemKnife:
@@ -168,12 +169,17 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	case itemBomb:
 		chance = 90
 		content = fmt.Sprintf("%v threw a bomb at %v and... ", sender.Mention(), target.Mention())
+		successMessage = "BOOM!1!11!! 💥💥💥💥💥"
+	case itemNuke:
+		chance = 100
+		content = fmt.Sprintf("%v nuked %v and... ", sender.Mention(), target.Mention())
+		successMessage = "OBLITERATED THEM!!! BOOM!1!11!! 💥💥💥💥💥"
 	}
 
 	result := "failed! oops"
 
 	if rand.IntN(99) < chance {
-		result = "killed them!"
+		result = successMessage
 	}
 
 	content += result
@@ -222,8 +228,14 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
+	isHigh, _ := getUserHighInfo(tx, sender.ID)
 	// random number from range 100-200
 	money := rand.IntN(100) + 100
+
+	if isHigh {
+		// apply 30% reduction if high
+		money = int(float64(money) * 0.7)
+	}
 
 	_, err = tx.Exec(
 		`
@@ -246,7 +258,13 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	content := fmt.Sprintf("You worked and got **%v** money!1!11!!", money)
+	content := ""
+
+	if isHigh {
+		content = "You are **high**!1!11!! Actually, it's not good... Money from work has decreased!!!\n"
+	}
+
+	content += fmt.Sprintf("You worked and got **%v** money!1!11!!", money)
 	respond(sess, inter, content, nil, false)
 }
 
@@ -341,7 +359,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	response := fmt.Sprintf("%v transferred %v money to %v!", sender.Mention(), amount, target.Mention())
+	response := fmt.Sprintf("%v transferred %v money to %v!1!11!!", sender.Mention(), amount, target.Mention())
 	respond(sess, inter, response, nil, true)
 }
 
@@ -395,7 +413,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	const cooldown = 60 * 60 // 1 hour in seconds
+	const cooldown = 20 * 60
 	currentTime := time.Now().Unix()
 
 	if lastStealFail.Valid && (currentTime-lastStealFail.Int64) < cooldown {
@@ -409,11 +427,17 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	content := ""
+	successChance := 50
+	isHigh, _ := getUserHighInfo(tx, sender.ID)
 
-	// 20% success chance
-	if rand.IntN(100) < 20 {
+	if isHigh {
+		content = "You are **high**!1!11!! Chances of successful steal has increased...\n"
+		successChance = 80
+	}
+
+	if rand.IntN(100) < successChance {
 		targetBalance := getUserBalance(tx, target.ID)
-		stealPercent := rand.IntN(51) // random percentage (0-50%)
+		stealPercent := rand.IntN(51)
 		stealAmount := (stealPercent * targetBalance) / 100
 
 		if !deductMoney(sess, inter, tx, target.ID, stealAmount, cmdSteal) {
@@ -436,7 +460,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content = fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
+		content += fmt.Sprintf("You successfully stole **%v** money from %v!1!11!!", stealAmount, target.Mention())
 	} else {
 		const penalty = 20
 		_, err := tx.Exec(
@@ -456,7 +480,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<", target.Mention(), penalty)
+		content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
+			"**Pro tip:** being high increases chances of a successful steal!1!11!!", target.Mention(), penalty)
 	}
 
 	if !interCommitTx(sess, inter, tx, cmdSteal) {
@@ -525,7 +550,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money!", item, price), nil, false)
+	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money!1!11!!", item, price), nil, false)
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -732,12 +757,57 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
+	duration := int64(0)
+
+	if item == itemMeth {
+		const effectDuration = 5 * 60
+		currentTime := time.Now().Unix()
+		newEndTime := currentTime + effectDuration
+
+		_, err = tx.Exec(
+			`
+			INSERT INTO meth_effects(user_id, end_time)
+			VALUES(?, ?)
+			ON CONFLICT(user_id) DO UPDATE SET
+				end_time = end_time + ?
+			`,
+			sender.ID, newEndTime, effectDuration)
+
+		if err != nil {
+			log.Printf("Failed to update meth effect in /eat: %v", err)
+			respond(sess, inter, "Failed to get high :<", nil, false)
+
+			return
+		}
+
+		duration = newEndTime - currentTime
+	} else {
+		_, endTime := getUserHighInfo(tx, sender.ID)
+		duration = endTime - time.Now().Unix()
+	}
+
 	if !interCommitTx(sess, inter, tx, cmdEat) {
 		return
 	}
 
-	content := fmt.Sprintf("You ate **%v**! Yummy!", item)
-	respond(sess, inter, content, nil, false)
+	if item == itemMeth {
+		content := fmt.Sprintf("You ate %v! Wowowowowowowowowowo the world is spinning wowowowowowo...\n\n"+
+			"You're now high for %vm %vs!1!11!!", item, duration/60, duration%60)
+		handleImageCmd(sess, inter, content, "res/gif/spin.gif")
+	} else {
+		message := "Yummy!"
+
+		switch item {
+		case itemKnife:
+			message = "Oh wait why did you do that??? You're dead from several internal bleeds."
+		case itemBomb:
+		case itemNuke:
+			message = "BOOM!1!11!!💥💥💥💥💥"
+		}
+
+		content := fmt.Sprintf("You ate **%v**! %s", item, message)
+		respond(sess, inter, content, nil, false)
+	}
 }
 
 // handler for interactions

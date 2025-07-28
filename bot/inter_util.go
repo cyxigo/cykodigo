@@ -192,25 +192,6 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
 }
 
-// util function for getting user balances in sql transactions
-// yes /balance doesnt use it
-// cus /balance doesnt need sql transactions since its just one query
-func getUserBalance(tx *sql.Tx, userID string) int {
-	balance := 0
-	err := tx.QueryRow(
-		`
-		SELECT balance
-		FROM balances 
-		WHERE user_id = ?
-		`, userID).Scan(&balance)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Query error in getUserBalance: %v", err)
-	}
-
-	return balance
-}
-
 // util function for money deduction in interactions sql transactions
 //
 // turns out its very common operation ¯\_(ツ)_/¯

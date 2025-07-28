@@ -112,7 +112,7 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		handleMsgMeow(sess, msg)
 	case strings.Contains(content, cmdMsgCrazy):
 		sess.ChannelMessageSend(msg.ChannelID,
-			"Crazy? I was crazy once, They locked me in a room, a rubber room, a rubber room with rats, "+
+			"Crazy? I was crazy once. They locked me in a room, a rubber room, a rubber room with rats, "+
 				"and rats make me crazy.",
 		)
 	case strings.Contains(content, cmdMsgExplodeBalls):

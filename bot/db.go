@@ -30,6 +30,10 @@ func initDB(db *sql.DB, name string) bool {
 			user_id TEXT NOT NULL,
 			item TEXT NOT NULL
 		);
+		CREATE TABLE IF NOT EXISTS meth_effects (
+			user_id TEXT PRIMARY KEY,
+			end_time INTEGER NOT NULL
+		);
 		CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory(user_id);
 		`)
 

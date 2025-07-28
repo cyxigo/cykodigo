@@ -9,20 +9,34 @@ const (
 	itemApple  = "apple"
 	itemFish   = "fish"
 	itemCatnip = "catnip"
+	itemMeth   = "meth"
 
 	itemKnife = "knife"
 	itemGun   = "gun"
 	itemBomb  = "bomb"
+	itemNuke  = "nuke"
 
 	itemDiamond = "diamond"
 )
 
 var foodItems = []string{
-	itemCandy, itemApple, itemFish, itemCatnip,
+	// dont ask me why you can eat knife, bomb and nuke
+	// ask yourself why would you eat that lol
+	itemCandy,
+	itemApple,
+	itemFish,
+	itemCatnip,
+	itemMeth,
+	itemKnife,
+	itemBomb,
+	itemNuke,
 }
 
 var weaponItems = []string{
-	itemKnife, itemGun, itemBomb,
+	itemKnife,
+	itemGun,
+	itemBomb,
+	itemNuke,
 }
 
 var shopItems = map[string]int{
@@ -30,10 +44,12 @@ var shopItems = map[string]int{
 	itemApple:  100,
 	itemFish:   75,
 	itemCatnip: 150,
+	itemMeth:   300,
 
 	itemKnife: 200,
 	itemGun:   500,
 	itemBomb:  700,
+	itemNuke:  2000,
 
 	itemDiamond: 1000,
 }
