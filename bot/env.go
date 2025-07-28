@@ -13,15 +13,14 @@ func InitEnv() {
 	}
 }
 
-// i COULD just return empty string as a sign of failure but you know
-// i like returning "ok" bool
+// util function for getting .env variables
+// logs if the variable doesn't exist
 func getEnvVariable(name string) (string, bool) {
-	variable := os.Getenv(name)
+	variable, ok := os.LookupEnv(name)
 
-	if variable == "" {
+	if !ok {
 		log.Printf("Couldn't find variable '%v' in .env file", name)
-		return "", false
 	}
 
-	return variable, true
+	return variable, ok
 }
