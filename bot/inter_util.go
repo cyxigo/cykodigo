@@ -67,7 +67,7 @@ func respondEmbed(sess *discordgo.Session, inter *discordgo.InteractionCreate, c
 }
 
 // util function for creating embeds
-func embedContent(content string) *discordgo.MessageEmbed {
+func embedText(content string) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		Description: content,
 		Color:       defaultEmbedColor,

@@ -22,15 +22,14 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"cykodigo has many other commands and stuff, I didn't describe all his features hehe\n" +
 		"I think it would be more fun if you found out all this by yourself\n" +
 		"Meow-meow!"
+	website := "**My website!**\n" +
+		"I don't think anyone will look in here, but [here](https://cyxigo.github.io/cykodigo-io/) " +
+		"my super duper website!1!11!!\n" +
+		"P.S for nerds: Terms of Service and Privacy Policy are also there"
 
-	featureEmbed := &discordgo.MessageEmbed{
-		Description: features,
-		Color:       defaultEmbedColor,
-	}
-	otherFeaturesEmbed := &discordgo.MessageEmbed{
-		Description: otherFeatures,
-		Color:       defaultEmbedColor,
-	}
+	featureEmbed := embedText(features)
+	otherFeaturesEmbed := embedText(otherFeatures)
+	websiteEmbed := embedText(website)
 
 	content := "**Super-duper manual!1!11!!**\n" +
 		"-# Copyright (c) 2025 cyxigo"
@@ -38,6 +37,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{
 		featureEmbed,
 		otherFeaturesEmbed,
+		websiteEmbed,
 	}, false)
 }
 
@@ -476,7 +476,7 @@ func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		builder.WriteString(itemString)
 	}
 
-	embed := embedContent(builder.String())
+	embed := embedText(builder.String())
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
@@ -587,7 +587,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 		builder.WriteString(itemString)
 	}
 
-	embed := embedContent(builder.String())
+	embed := embedText(builder.String())
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
@@ -660,7 +660,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	content := "**Diamond Leaderboard!1!11!!**\n" +
 		"-# Buy some with `/buy diamond`!!!"
-	embed := embedContent(strings.Join(leaderboard, "\n"))
+	embed := embedText(strings.Join(leaderboard, "\n"))
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
