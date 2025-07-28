@@ -432,14 +432,16 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	isHigh, _ := getUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high**, Chances of successful steal has increased %s...\n", emojiCatr)
+		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %s...\n", emojiCatr)
 		successChance = 80
 	}
 
 	if rand.IntN(100) < successChance {
 		targetBalance := getUserBalance(tx, target.ID)
-		stealPercent := rand.IntN(51)
-		stealAmount := (stealPercent * targetBalance) / 100
+
+		// max() all stuff so we cant get 0 from stealing lol
+		stealPercent := max(1, rand.IntN(51))
+		stealAmount := max(1, (stealPercent*targetBalance)/100)
 
 		if !deductMoney(sess, inter, tx, target.ID, stealAmount, cmdSteal) {
 			return
@@ -481,9 +483,16 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
-			"**Pro tip:** being high increases chances of a successful steal %s",
-			target.Mention(), penalty, emojiCatr)
+		if isHigh {
+			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
+				"Even being **high** couldn't help you %s",
+				target.Mention(), penalty, emojiCatr)
+		} else {
+			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
+				"**Pro tip:** being **high** increases chances of a successful steal %s",
+				target.Mention(), penalty, emojiCatr)
+		}
+
 	}
 
 	if !interCommitTx(sess, inter, tx, cmdSteal) {
@@ -777,7 +786,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		if err != nil {
 			log.Printf("Failed to update meth effect in /eat: %v", err)
-			respond(sess, inter, "Failed to get high :<", nil, false)
+			respond(sess, inter, "Failed to get **high** :<", nil, false)
 
 			return
 		}
@@ -793,7 +802,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		if err != nil {
 			log.Printf("Failed to get updated end time in /eat: %v", err)
-			respond(sess, inter, "Failed to get high :<", nil, false)
+			respond(sess, inter, "Failed to get **high** :<", nil, false)
 
 			return
 		}
