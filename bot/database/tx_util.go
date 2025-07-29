@@ -9,7 +9,7 @@ import (
 // util function for getting user balances in sql transactions
 // yes /balance doesnt use it
 // cus /balance doesnt need sql transactions since its just one query
-func GetUserBalance(tx *sql.Tx, userID string) int {
+func TxGetUserBalance(tx *sql.Tx, userID string) int {
 	balance := 0
 	err := tx.QueryRow(
 		`
@@ -27,7 +27,7 @@ func GetUserBalance(tx *sql.Tx, userID string) int {
 
 // util function to get info about a users meth effect status in sql transactions
 // returns whether the user is currently high and the effect end time
-func GetUserHighInfo(tx *sql.Tx, userID string) (bool, int64) {
+func TxGetUserHighInfo(tx *sql.Tx, userID string) (bool, int64) {
 	endTime := int64(0)
 	err := tx.QueryRow(
 		`
@@ -37,7 +37,7 @@ func GetUserHighInfo(tx *sql.Tx, userID string) (bool, int64) {
 		`, userID).Scan(&endTime)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Query error in isUserHigh: %v", err)
+		log.Printf("Query error in TxGetUserHighInfo: %v", err)
 	}
 
 	return time.Now().Unix() < endTime, endTime

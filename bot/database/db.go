@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -78,4 +79,20 @@ func GetDB(guildID string) (*sql.DB, bool) {
 
 	dbCache[guildID] = db
 	return db, true
+}
+
+func GetUserHighInfo(db *sql.DB, userID string) (bool, int64) {
+	endTime := int64(0)
+	err := db.QueryRow(
+		`
+		SELECT end_time 
+		FROM meth_effects 
+		WHERE user_id = ?
+		`, userID).Scan(&endTime)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Query error in TxGetUserHighInfo: %v", err)
+	}
+
+	return time.Now().Unix() < endTime, endTime
 }

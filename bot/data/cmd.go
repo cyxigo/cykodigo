@@ -25,6 +25,7 @@ const (
 	CmdInventory   = "inventory"
 	CmdLeaderboard = "leaderboard"
 	CmdEat         = "eat"
+	CmdHigh        = "high"
 
 	// msg means that this is message content command
 	// same for handlers: handleMsg
@@ -204,6 +205,18 @@ var Cmds = []*discordgo.ApplicationCommand{
 				Name:        "item",
 				Description: "Item to eat",
 				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdHigh,
+		Description: "Check if you are high and the remaining time if you are",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "member",
+				Description: "Person to check (optional)",
+				Required:    false,
 			},
 		},
 	},
