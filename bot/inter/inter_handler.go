@@ -792,6 +792,8 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		case data.ItemBomb:
 		case data.ItemNuke:
 			message = "BOOM!1!11!!💥💥💥💥💥"
+		case data.ItemChalk:
+			message = "Crunchy dammit!"
 		}
 
 		content := fmt.Sprintf("You ate **%v**! %s", item, message)
