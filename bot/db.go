@@ -22,7 +22,10 @@ func initDB(db *sql.DB, name string) bool {
 		`
 		CREATE TABLE IF NOT EXISTS balances (
 			user_id TEXT PRIMARY KEY,
-			balance INTEGER NOT NULL DEFAULT 0,
+			balance INTEGER NOT NULL DEFAULT 0
+		);
+		CREATE TABLE IF NOT EXISTS cooldowns (
+			user_id TEXT PRIMARY KEY,
 			last_work INTEGER NOT NULL DEFAULT 0,
 			last_steal_fail INTEGER NOT NULL DEFAULT 0
 		);
@@ -32,9 +35,13 @@ func initDB(db *sql.DB, name string) bool {
 		);
 		CREATE TABLE IF NOT EXISTS meth_effects (
 			user_id TEXT PRIMARY KEY,
-			end_time INTEGER NOT NULL
+			end_time INTEGER NOT NULL DEFAULT 0
 		);
+		
+		CREATE INDEX IF NOT EXISTS idx_balances_user ON balances(user_id);
+		CREATE INDEX IF NOT EXISTS idx_cooldowns_user ON cooldowns(user_id);
 		CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory(user_id);
+		CREATE INDEX IF NOT EXISTS idx_meth_effects_user ON meth_effects(user_id);
 		`)
 
 	if err != nil {

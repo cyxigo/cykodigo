@@ -205,7 +205,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	err := tx.QueryRow(
 		`
 		SELECT last_work 
-		FROM balances 
+		FROM cooldowns 
 		WHERE user_id = ?
 		`, sender.ID).Scan(&lastWork)
 
@@ -237,20 +237,11 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		money = int(float64(money) * 0.7)
 	}
 
-	_, err = tx.Exec(
-		`
-		INSERT INTO balances(user_id, balance, last_work)
-		VALUES(?, ?, ?)
-		ON CONFLICT(user_id) DO UPDATE SET 
-			balance = balance + ?,
-			last_work = ?
-		`,
-		sender.ID, money, currentTime, money, currentTime)
+	if !addMoney(sess, inter, tx, sender.ID, money, cmdWork) {
+		return
+	}
 
-	if err != nil {
-		log.Printf("Update error in /work: %v", err)
-		respond(sess, inter, "Failed to work :<", nil, false)
-
+	if !updateCooldown(sess, inter, tx, sender.ID, "last_work", currentTime, cmdWork) {
 		return
 	}
 
@@ -336,23 +327,11 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	if !deductMoney(sess, inter, tx, sender.ID, amount, cmdTransfer) {
+	if !removeMoney(sess, inter, tx, sender.ID, amount, cmdTransfer) {
 		return
 	}
 
-	_, err := tx.Exec(
-		`
-        INSERT INTO balances(user_id, balance) 
-        VALUES(?, ?) 
-        ON CONFLICT(user_id) DO UPDATE SET 
-            balance = balance + ?
-        `,
-		target.ID, amount, amount)
-
-	if err != nil {
-		log.Printf("Insert error in /transfer: %v", err)
-		respond(sess, inter, "Failed to add money to recipient :<", nil, false)
-
+	if !addMoney(sess, inter, tx, target.ID, amount, cmdTransfer) {
 		return
 	}
 
@@ -403,7 +382,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	err := db.QueryRow(
 		`
 		SELECT last_steal_fail 
-		FROM balances 
+		FROM cooldowns 
 		WHERE user_id = ?
 		`, sender.ID).Scan(&lastStealFail)
 
@@ -443,43 +422,23 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		stealPercent := max(1, rand.IntN(51))
 		stealAmount := max(1, (stealPercent*targetBalance)/100)
 
-		if !deductMoney(sess, inter, tx, target.ID, stealAmount, cmdSteal) {
+		if !removeMoney(sess, inter, tx, target.ID, stealAmount, cmdSteal) {
 			return
 		}
 
-		_, err = tx.Exec(
-			`
-			INSERT INTO balances(user_id, balance) VALUES(?, ?) 
-			ON CONFLICT(user_id) DO UPDATE SET 
-				balance = balance + ?
-			`,
-			sender.ID, stealAmount, stealAmount,
-		)
-
-		if err != nil {
-			log.Printf("Insert error in /steal: %v", err)
-			respond(sess, inter, "Failed to add money to your account :<", nil, false)
-
+		if !addMoney(sess, inter, tx, sender.ID, stealAmount, cmdSteal) {
 			return
 		}
 
 		content += fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
 	} else {
 		const penalty = 20
-		_, err := tx.Exec(
-			`
-			INSERT INTO balances (user_id, balance)
-			VALUES (?, ?)
-			ON CONFLICT(user_id) DO UPDATE SET 
-				balance = balance - ?,
-				last_steal_fail = ?
-			`,
-			sender.ID, -penalty, penalty, currentTime)
 
-		if err != nil {
-			log.Printf("Penalty error in /steal: %v", err)
-			respond(sess, inter, "Failed to steal :<", nil, false)
+		if !removeMoney(sess, inter, tx, sender.ID, penalty, cmdSteal) {
+			return
+		}
 
+		if !updateCooldown(sess, inter, tx, sender.ID, "last_steal_fail", currentTime, cmdSteal) {
 			return
 		}
 
@@ -546,7 +505,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !deductMoney(sess, inter, tx, sender.ID, price, cmdBuy) {
+	if !removeMoney(sess, inter, tx, sender.ID, price, cmdBuy) {
 		return
 	}
 

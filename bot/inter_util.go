@@ -192,19 +192,60 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
 }
 
+// util function for updating cooldown in interactions sql transactions
+// e.g work cooldown
+func updateCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
+	field string, value int64, cmd string) bool {
+	_, err := tx.Exec(
+		`
+		INSERT INTO cooldowns(user_id, `+field+`) 
+		VALUES(?, ?) 
+		ON CONFLICT(user_id) DO UPDATE SET 
+			`+field+` = ?
+		`,
+		userID, value, value)
+
+	if err != nil {
+		log.Printf("Cooldown update error in /%s: %v", cmd, err)
+		respond(sess, inter, "Failed to update cooldown :<", nil, false)
+
+		return false
+	}
+
+	return true
+}
+
+// util function for money addition in interactions sql transactions
+func addMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string, amount int,
+	cmd string) bool {
+	_, err := tx.Exec(
+		`
+		INSERT INTO balances(user_id, balance)
+		VALUES(?, ?)
+		ON CONFLICT(user_id) DO UPDATE SET 
+			balance = balance + ?
+		`, userID, amount, amount)
+
+	if err != nil {
+		log.Printf("Addition error in /%v: %v", cmd, err)
+		respond(sess, inter, "Failed to add money :<", nil, false)
+
+		return false
+	}
+
+	return true
+}
+
 // util function for money deduction in interactions sql transactions
-//
-// turns out its very common operation ¯\_(ツ)_/¯
-//
-// note: you should check for balance being less than amount
-func deductMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
+func removeMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
 	amount int, cmd string) bool {
 	_, err := tx.Exec(
 		`
-		UPDATE balances 
-		SET balance = balance - ? 
-		WHERE user_id = ?
-		`, amount, userID, amount)
+		INSERT INTO balances(user_id, balance)
+		VALUES(?, ?)
+		ON CONFLICT(user_id) DO UPDATE SET 
+			balance = balance - ?
+		`, userID, -amount, amount)
 
 	if err != nil {
 		log.Printf("Deduction error in /%v: %v", cmd, err)
