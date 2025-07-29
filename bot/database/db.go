@@ -81,6 +81,8 @@ func GetDB(guildID string) (*sql.DB, bool) {
 	return db, true
 }
 
+// util function to get info about a users meth effect status directly from database (not via transaction)
+// used exactly one time but i dont care it shortens the code
 func GetUserHighInfo(db *sql.DB, userID string) (bool, int64) {
 	endTime := int64(0)
 	err := db.QueryRow(
