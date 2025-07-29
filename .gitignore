@@ -18,5 +18,5 @@ go.work
 *.env
 
 # Stuff
-database
-res
+/database
+/res
