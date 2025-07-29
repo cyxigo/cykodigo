@@ -22,7 +22,8 @@ const (
 )
 
 // util function to send interaction responses
-func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, files []*discordgo.File,
+func interRespond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
+	files []*discordgo.File,
 	allowMentions bool) {
 	data := &discordgo.InteractionResponseData{
 		Content: content,
@@ -44,7 +45,7 @@ func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, conten
 }
 
 // util function to send interaction responses with embeds
-func respondEmbed(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
+func interRespondEmbed(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
 	files []*discordgo.File, embeds []*discordgo.MessageEmbed, allowMentions bool) {
 	data := &discordgo.InteractionResponseData{
 		Content: content,
@@ -77,7 +78,7 @@ func embedText(content string) *discordgo.MessageEmbed {
 }
 
 // util function for getting interaction sender cus yes
-func getInterSender(sess *discordgo.Session, inter *discordgo.InteractionCreate) (*discordgo.User, bool) {
+func interGetSender(sess *discordgo.Session, inter *discordgo.InteractionCreate) (*discordgo.User, bool) {
 	sender := inter.User
 
 	if sender == nil && inter.Member != nil {
@@ -86,7 +87,7 @@ func getInterSender(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	// how
 	if sender == nil {
-		respond(sess, inter, "Couldn't get interaction sender :<", nil, false)
+		interRespond(sess, inter, "Couldn't get interaction sender :<", nil, false)
 		return nil, false
 	}
 
@@ -95,7 +96,7 @@ func getInterSender(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 // util function for getting interaction [member] in commands like
 // /meowat [member]
-func getInterTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate, required bool) (
+func interGetTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate, required bool) (
 	*discordgo.User, bool) {
 	target := &discordgo.User{}
 	options := inter.ApplicationCommandData().Options
@@ -113,7 +114,7 @@ func getInterTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	// i genuinely dont know how this can fail but anyways heres check
 	// if we somehow didnt find user
 	if required && target == nil {
-		respond(sess, inter, "Couldn't find target user :<", nil, false)
+		interRespond(sess, inter, "Couldn't find target user :<", nil, false)
 		return nil, false
 	}
 
@@ -121,28 +122,28 @@ func getInterTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 }
 
 // util function for getting interaction user and sender cus yes
-func getInterSenderAndTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate) (
+func interGetSenderAndTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate) (
 	*discordgo.User, *discordgo.User, bool) {
-	target, ok := getInterTarget(sess, inter, true)
+	target, ok := interGetTarget(sess, inter, true)
 
 	if !ok {
 		return nil, nil, false
 	}
 
-	sender, ok := getInterSender(sess, inter)
+	sender, ok := interGetSender(sess, inter)
 	return sender, target, ok
 }
 
 // util function for getting target user from commands with optional [member] option
 // like /balance [member] <-- optional
-func getInterOptionalTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate) (
+func interGetOptionalTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate) (
 	*discordgo.User, bool) {
 	// check for [member] option
-	target, ok := getInterTarget(sess, inter, false)
+	target, ok := interGetTarget(sess, inter, false)
 
 	// if theres no [member] specified just use sender instead
 	if target == nil {
-		target, ok = getInterSender(sess, inter)
+		target, ok = interGetSender(sess, inter)
 	}
 
 	return target, ok
@@ -151,14 +152,14 @@ func getInterOptionalTarget(sess *discordgo.Session, inter *discordgo.Interactio
 // another util function for commands like
 // /meowat [member]
 func handleDoAtCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, what string) {
-	sender, target, ok := getInterSenderAndTarget(sess, inter)
+	sender, target, ok := interGetSenderAndTarget(sess, inter)
 
 	if !ok {
 		return
 	}
 
 	content := fmt.Sprintf("%v %v at %v!", sender.Mention(), what, target.Mention())
-	respond(sess, inter, content, nil, true)
+	interRespond(sess, inter, content, nil, true)
 }
 
 // util function for handling commands in interactions that send image
@@ -168,7 +169,7 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 
 	if err != nil {
 		log.Printf("Error opening '%v': %v", imgPath, err)
-		respond(sess, inter, "Couldn't open image :<", nil, false)
+		interRespond(sess, inter, "Couldn't open image :<", nil, false)
 
 		return
 	}
@@ -189,12 +190,18 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 		},
 	}
 
-	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
+	interRespondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
 }
+
+// i dont know why i created these, but i like them
+const (
+	cdWorkField  = "last_work"
+	cdStealField = "last_steal_fail"
+)
 
 // util function for updating cooldown in interactions sql transactions
 // e.g work cooldown
-func updateCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
+func interTxUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
 	field string, value int64, cmd string) bool {
 	_, err := tx.Exec(
 		`
@@ -207,7 +214,7 @@ func updateCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 
 	if err != nil {
 		log.Printf("Cooldown update error in /%s: %v", cmd, err)
-		respond(sess, inter, "Failed to update cooldown :<", nil, false)
+		interRespond(sess, inter, "Failed to update cooldown :<", nil, false)
 
 		return false
 	}
@@ -215,41 +222,27 @@ func updateCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	return true
 }
 
+// i dont know why i created these, but i like them
+//   - (c) cyxigo
+const (
+	opAdd = "+"
+	opSub = "-"
+)
+
 // util function for money addition in interactions sql transactions
-func addMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string, amount int,
-	cmd string) bool {
+func interTxMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string, amount int,
+	op string, cmd string) bool {
 	_, err := tx.Exec(
 		`
 		INSERT INTO balances(user_id, balance)
 		VALUES(?, ?)
 		ON CONFLICT(user_id) DO UPDATE SET 
-			balance = balance + ?
+			balance = balance `+op+` ?
 		`, userID, amount, amount)
 
 	if err != nil {
 		log.Printf("Addition error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to add money :<", nil, false)
-
-		return false
-	}
-
-	return true
-}
-
-// util function for money deduction in interactions sql transactions
-func removeMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
-	amount int, cmd string) bool {
-	_, err := tx.Exec(
-		`
-		INSERT INTO balances(user_id, balance)
-		VALUES(?, ?)
-		ON CONFLICT(user_id) DO UPDATE SET 
-			balance = balance - ?
-		`, userID, -amount, amount)
-
-	if err != nil {
-		log.Printf("Deduction error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to deduct money :<", nil, false)
+		interRespond(sess, inter, "Failed to add money :<", nil, false)
 
 		return false
 	}
@@ -259,14 +252,14 @@ func removeMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx
 
 // util function for getting an item from command option
 // returns item and its price
-func getItemFromInterOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, idx int) (
+func interGetItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, idx int) (
 	string, int, bool) {
 	item := strings.ToLower(inter.ApplicationCommandData().Options[idx].StringValue())
 	price, exists := shopItems[item]
 
 	if !exists {
 		content := fmt.Sprintf("There's no item **%v**!!!", item)
-		respond(sess, inter, content, nil, false)
+		interRespond(sess, inter, content, nil, false)
 
 		return "", 0, false
 	}
@@ -290,7 +283,7 @@ func interBeginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, c
 		log.Printf("Failed to begin transaction in /%v: %v", cmd, err)
 
 		content := fmt.Sprintf("Failed to start /%v :<", cmd)
-		respond(sess, inter, content, nil, false)
+		interRespond(sess, inter, content, nil, false)
 
 		return nil, false
 	}
@@ -304,7 +297,7 @@ func interCommitTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, 
 		log.Printf("Commit error in /%v: %v", cmd, err)
 
 		content := fmt.Sprintf("Failed to finish /%v :<", cmd)
-		respond(sess, inter, content, nil, false)
+		interRespond(sess, inter, content, nil, false)
 
 		return false
 	}
