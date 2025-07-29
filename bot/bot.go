@@ -6,11 +6,13 @@ import (
 	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyxigo/cykodigo/bot/data"
+	"github.com/cyxigo/cykodigo/bot/inter"
 )
 
 // wake up cykodigo!
 func WakeUp() {
-	token, ok := getEnvVariable("TOKEN")
+	token, ok := data.GetEnvVariable("TOKEN")
 
 	if !ok {
 		return
@@ -24,7 +26,7 @@ func WakeUp() {
 
 	sess.StateEnabled = true
 
-	sess.AddHandler(InterHandler)
+	sess.AddHandler(inter.InterHandler)
 	sess.AddHandler(MsgHandler)
 
 	err = sess.Open()
@@ -35,7 +37,7 @@ func WakeUp() {
 
 	defer sess.Close()
 
-	sess.ApplicationCommandBulkOverwrite(sess.State.User.ID, "", cmds)
+	sess.ApplicationCommandBulkOverwrite(sess.State.User.ID, "", data.Cmds)
 
 	log.Printf("Online")
 

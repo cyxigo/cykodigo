@@ -1,4 +1,4 @@
-package bot
+package inter
 
 import (
 	"database/sql"
@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyxigo/cykodigo/bot/data"
+	"github.com/cyxigo/cykodigo/bot/database"
 )
 
 // quick note for myself cus i will forget 100%:
@@ -16,10 +18,6 @@ import (
 // target - person who was specified in [member] option
 //
 // also, i dont why but this file is really commented :p
-
-const (
-	defaultEmbedColor = 0xFF7B00
-)
 
 // util function to send interaction responses
 func interRespond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
@@ -65,16 +63,6 @@ func interRespondEmbed(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: data,
 	})
-}
-
-// util function for creating embeds
-func embedText(content string) *discordgo.MessageEmbed {
-	embed := &discordgo.MessageEmbed{
-		Description: content,
-		Color:       defaultEmbedColor,
-	}
-
-	return embed
 }
 
 // util function for getting interaction sender cus yes
@@ -184,7 +172,7 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	description := fmt.Sprintf("**%v**", content)
 	embed := &discordgo.MessageEmbed{
 		Description: description,
-		Color:       defaultEmbedColor,
+		Color:       data.DefaultEmbedColor,
 		Image: &discordgo.MessageEmbedImage{
 			URL: "attachment://" + imgName,
 		},
@@ -255,7 +243,7 @@ func interTxMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 func interGetItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, idx int) (
 	string, int, bool) {
 	item := strings.ToLower(inter.ApplicationCommandData().Options[idx].StringValue())
-	price, exists := shopItems[item]
+	price, exists := data.ShopItems[item]
 
 	if !exists {
 		content := fmt.Sprintf("There's no item **%v**!!!", item)
@@ -271,7 +259,7 @@ func interGetItemFromOption(sess *discordgo.Session, inter *discordgo.Interactio
 //
 // note: dont forget to "defer tx.Rollback()"
 func interBeginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, cmd string) (*sql.Tx, bool) {
-	db, ok := getDB(inter.GuildID)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return nil, false

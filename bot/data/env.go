@@ -1,4 +1,4 @@
-package bot
+package data
 
 import (
 	"log"
@@ -15,7 +15,7 @@ func InitEnv() {
 
 // util function for getting .env variables
 // logs if the variable doesn't exist
-func getEnvVariable(name string) (string, bool) {
+func GetEnvVariable(name string) (string, bool) {
 	variable, ok := os.LookupEnv(name)
 
 	if !ok {

@@ -1,4 +1,4 @@
-package bot
+package inter
 
 import (
 	"database/sql"
@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/cyxigo/cykodigo/bot/data"
+	"github.com/cyxigo/cykodigo/bot/database"
 )
 
 func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -24,14 +26,14 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"Meow-meow!"
 	website := "**My website!**\n" +
 		"I don't think anyone will look in here, but [here](https://cyxigo.github.io/cykodigo-io/) " +
-		fmt.Sprintf("my super duper website %s\n", emojiCykodigo) +
+		fmt.Sprintf("my super duper website %s\n", data.EmojiCykodigo) +
 		"P.S for nerds: Terms of Service and Privacy Policy are also there"
 
-	featureEmbed := embedText(features)
-	otherFeaturesEmbed := embedText(otherFeatures)
-	websiteEmbed := embedText(website)
+	featureEmbed := data.EmbedText(features)
+	otherFeaturesEmbed := data.EmbedText(otherFeatures)
+	websiteEmbed := data.EmbedText(website)
 
-	content := fmt.Sprintf("**Super-duper manual %s**\n", emojiCykodigo) +
+	content := fmt.Sprintf("**Super-duper manual %s**\n", data.EmojiCykodigo) +
 		"-# Copyright (c) 2025 cyxigo"
 
 	interRespondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{
@@ -104,7 +106,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 }
 
 func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := getDB(inter.GuildID)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
@@ -123,7 +125,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	if !isWeapon(item) {
+	if !data.IsWeapon(item) {
 		content := fmt.Sprintf("Item **%v** isn't a weapon!!!", item)
 		interRespond(sess, inter, content, nil, false)
 
@@ -160,17 +162,17 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	successMessage := "killed them!"
 
 	switch item {
-	case itemKnife:
+	case data.ItemKnife:
 		chance = 20
 		content = fmt.Sprintf("%v tried to stab %v with a knife and... ", sender.Mention(), target.Mention())
-	case itemGun:
+	case data.ItemGun:
 		chance = 70
 		content = fmt.Sprintf("%v tried to shoot %v with a gun and... ", sender.Mention(), target.Mention())
-	case itemBomb:
+	case data.ItemBomb:
 		chance = 90
 		content = fmt.Sprintf("%v threw a bomb at %v and... ", sender.Mention(), target.Mention())
 		successMessage = "BOOM!1!11!! 💥💥💥💥💥"
-	case itemNuke:
+	case data.ItemNuke:
 		chance = 100
 		content = fmt.Sprintf("%v nuked %v and... ", sender.Mention(), target.Mention())
 		successMessage = "OBLITERATED THEM!!! BOOM!1!11!! 💥💥💥💥💥"
@@ -193,7 +195,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, ok := interBeginTx(sess, inter, cmdWork)
+	tx, ok := interBeginTx(sess, inter, data.CmdWork)
 
 	if !ok {
 		return
@@ -228,7 +230,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	isHigh, _ := getUserHighInfo(tx, sender.ID)
+	isHigh, _ := database.GetUserHighInfo(tx, sender.ID)
 	// random number from range 100-200
 	money := rand.IntN(100) + 100
 
@@ -237,15 +239,15 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		money = int(float64(money) * 0.7)
 	}
 
-	if !interTxMoneyOp(sess, inter, tx, sender.ID, money, opAdd, cmdWork) {
+	if !interTxMoneyOp(sess, inter, tx, sender.ID, money, opAdd, data.CmdWork) {
 		return
 	}
 
-	if !interTxUpdateCd(sess, inter, tx, sender.ID, cdWorkField, currentTime, cmdWork) {
+	if !interTxUpdateCd(sess, inter, tx, sender.ID, cdWorkField, currentTime, data.CmdWork) {
 		return
 	}
 
-	if !interCommitTx(sess, inter, tx, cmdWork) {
+	if !interCommitTx(sess, inter, tx, data.CmdWork) {
 		return
 	}
 
@@ -253,7 +255,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if isHigh {
 		content = fmt.Sprintf("You are **high** %s Actually, it's not good... Money from work has decreased!!!\n",
-			emojiCatr)
+			data.EmojiCatr)
 	}
 
 	content += fmt.Sprintf("You worked and got **%v** money!", money)
@@ -261,7 +263,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := getDB(inter.GuildID)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
@@ -312,7 +314,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	tx, ok := interBeginTx(sess, inter, cmdTransfer)
+	tx, ok := interBeginTx(sess, inter, data.CmdTransfer)
 
 	if !ok {
 		return
@@ -320,22 +322,22 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	defer tx.Rollback()
 
-	balance := getUserBalance(tx, sender.ID)
+	balance := database.GetUserBalance(tx, sender.ID)
 
 	if balance < amount {
 		interRespond(sess, inter, "You don't have enough money for this transfer!!!", nil, false)
 		return
 	}
 
-	if !interTxMoneyOp(sess, inter, tx, sender.ID, amount, opSub, cmdTransfer) {
+	if !interTxMoneyOp(sess, inter, tx, sender.ID, amount, opSub, data.CmdTransfer) {
 		return
 	}
 
-	if !interTxMoneyOp(sess, inter, tx, target.ID, amount, opAdd, cmdTransfer) {
+	if !interTxMoneyOp(sess, inter, tx, target.ID, amount, opAdd, data.CmdTransfer) {
 		return
 	}
 
-	if !interCommitTx(sess, inter, tx, cmdTransfer) {
+	if !interCommitTx(sess, inter, tx, data.CmdTransfer) {
 		return
 	}
 
@@ -344,7 +346,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 }
 
 func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := getDB(inter.GuildID)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
@@ -361,7 +363,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, ok := interBeginTx(sess, inter, cmdSteal)
+	tx, ok := interBeginTx(sess, inter, data.CmdSteal)
 
 	if !ok {
 		return
@@ -369,7 +371,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	targetBalance := getUserBalance(tx, target.ID)
+	targetBalance := database.GetUserBalance(tx, target.ID)
 
 	if targetBalance <= 0 {
 		content := fmt.Sprintf("%v is **broke!** Nothing to steal", target.Mention())
@@ -408,25 +410,25 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	content := ""
 	successChance := 50
-	isHigh, _ := getUserHighInfo(tx, sender.ID)
+	isHigh, _ := database.GetUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %s...\n", emojiCatr)
+		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %s...\n", data.EmojiCatr)
 		successChance = 80
 	}
 
 	if rand.IntN(100) < successChance {
-		targetBalance := getUserBalance(tx, target.ID)
+		targetBalance := database.GetUserBalance(tx, target.ID)
 
 		// max() all stuff so we cant get 0 from stealing lol
 		stealPercent := max(1, rand.IntN(51))
 		stealAmount := max(1, (stealPercent*targetBalance)/100)
 
-		if !interTxMoneyOp(sess, inter, tx, target.ID, stealAmount, opSub, cmdSteal) {
+		if !interTxMoneyOp(sess, inter, tx, target.ID, stealAmount, opSub, data.CmdSteal) {
 			return
 		}
 
-		if !interTxMoneyOp(sess, inter, tx, sender.ID, stealAmount, opAdd, cmdSteal) {
+		if !interTxMoneyOp(sess, inter, tx, sender.ID, stealAmount, opAdd, data.CmdSteal) {
 			return
 		}
 
@@ -434,27 +436,27 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	} else {
 		const penalty = 20
 
-		if !interTxMoneyOp(sess, inter, tx, sender.ID, penalty, opSub, cmdSteal) {
+		if !interTxMoneyOp(sess, inter, tx, sender.ID, penalty, opSub, data.CmdSteal) {
 			return
 		}
 
-		if !interTxUpdateCd(sess, inter, tx, sender.ID, cdStealField, currentTime, cmdSteal) {
+		if !interTxUpdateCd(sess, inter, tx, sender.ID, cdStealField, currentTime, data.CmdSteal) {
 			return
 		}
 
 		if isHigh {
 			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
 				"Even being **high** couldn't help you %s",
-				target.Mention(), penalty, emojiCatr)
+				target.Mention(), penalty, data.EmojiCatr)
 		} else {
 			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
 				"**Pro tip:** being **high** increases chances of a successful steal %s",
-				target.Mention(), penalty, emojiCatr)
+				target.Mention(), penalty, data.EmojiCatr)
 		}
 
 	}
 
-	if !interCommitTx(sess, inter, tx, cmdSteal) {
+	if !interCommitTx(sess, inter, tx, data.CmdSteal) {
 		return
 	}
 
@@ -463,15 +465,15 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	builder := strings.Builder{}
-	content := fmt.Sprintf("**Shop %s**\n", emojiCykodigo) +
+	content := fmt.Sprintf("**Shop %s**\n", data.EmojiCykodigo) +
 		"-# Use `/buy [item]` to buy something!!!"
 
-	for item, price := range shopItems {
+	for item, price := range data.ShopItems {
 		itemString := fmt.Sprintf("- %v: %v money\n", item, price)
 		builder.WriteString(itemString)
 	}
 
-	embed := embedText(builder.String())
+	embed := data.EmbedText(builder.String())
 	interRespondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
@@ -488,7 +490,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, ok := interBeginTx(sess, inter, cmdBuy)
+	tx, ok := interBeginTx(sess, inter, data.CmdBuy)
 
 	if !ok {
 		return
@@ -496,7 +498,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	balance := getUserBalance(tx, sender.ID)
+	balance := database.GetUserBalance(tx, sender.ID)
 
 	if balance < price {
 		content := fmt.Sprintf("Too broke for **%v**, go work!!!", item)
@@ -505,7 +507,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !interTxMoneyOp(sess, inter, tx, sender.ID, price, opSub, cmdBuy) {
+	if !interTxMoneyOp(sess, inter, tx, sender.ID, price, opSub, data.CmdBuy) {
 		return
 	}
 
@@ -516,7 +518,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !interCommitTx(sess, inter, tx, cmdBuy) {
+	if !interCommitTx(sess, inter, tx, data.CmdBuy) {
 		return
 	}
 
@@ -524,7 +526,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := getDB(inter.GuildID)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
@@ -582,12 +584,12 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 		builder.WriteString(itemString)
 	}
 
-	embed := embedText(builder.String())
+	embed := data.EmbedText(builder.String())
 	interRespondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
 func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := getDB(inter.GuildID)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
@@ -601,7 +603,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		GROUP BY user_id
 		ORDER BY diamond_count DESC
 		LIMIT 10
-		`, itemDiamond)
+		`, data.ItemDiamond)
 
 	if err != nil {
 		log.Printf("Query error in /leaderboard: %v", err)
@@ -655,7 +657,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	content := "**Diamond Leaderboard**\n" +
 		"-# Buy some with `/buy diamond`!!!"
-	embed := embedText(strings.Join(leaderboard, "\n"))
+	embed := data.EmbedText(strings.Join(leaderboard, "\n"))
 	interRespondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
 }
 
@@ -672,14 +674,14 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !isFood(item) {
+	if !data.IsFood(item) {
 		content := fmt.Sprintf("You can't eat **%v**!!!", item)
 		interRespond(sess, inter, content, nil, false)
 
 		return
 	}
 
-	tx, ok := interBeginTx(sess, inter, cmdEat)
+	tx, ok := interBeginTx(sess, inter, data.CmdEat)
 
 	if !ok {
 		return
@@ -729,7 +731,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	duration := int64(0)
 
-	if item == itemMeth {
+	if item == data.ItemMeth {
 		const effectDuration = 5 * 60
 		currentTime := time.Now().Unix()
 		newEndTime := currentTime + effectDuration
@@ -768,26 +770,26 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		duration = updatedEndTime - currentTime
 	} else {
-		_, endTime := getUserHighInfo(tx, sender.ID)
+		_, endTime := database.GetUserHighInfo(tx, sender.ID)
 		duration = endTime - time.Now().Unix()
 	}
 
-	if !interCommitTx(sess, inter, tx, cmdEat) {
+	if !interCommitTx(sess, inter, tx, data.CmdEat) {
 		return
 	}
 
-	if item == itemMeth {
+	if item == data.ItemMeth {
 		content := fmt.Sprintf("You ate %v! Wowowowowowowowowowo the world is spinning wowowowowowo...\n\n"+
-			"You're now high for %vm %vs %s", item, duration/60, duration%60, emojiCatr)
+			"You're now high for %vm %vs %s", item, duration/60, duration%60, data.EmojiCatr)
 		handleImageCmd(sess, inter, content, "res/gif/spin.gif")
 	} else {
-		message := "Yummy! " + emojiCykodigo
+		message := "Yummy! " + data.EmojiCykodigo
 
 		switch item {
-		case itemKnife:
+		case data.ItemKnife:
 			message = "Oh wait why did you do that??? You're dead from several internal bleeds."
-		case itemBomb:
-		case itemNuke:
+		case data.ItemBomb:
+		case data.ItemNuke:
 			message = "BOOM!1!11!!💥💥💥💥💥"
 		}
 
@@ -806,51 +808,51 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	switch inter.ApplicationCommandData().Name {
-	case cmdHelp:
+	case data.CmdHelp:
 		handleHelp(sess, inter)
-	case cmdMe:
+	case data.CmdMe:
 		handleImageCmd(sess, inter, "Me!", "res/me.png")
-	case cmdMeow:
+	case data.CmdMeow:
 		interRespond(sess, inter, "Meow!", nil, false)
-	case cmdMeowat:
+	case data.CmdMeowat:
 		handleMeowat(sess, inter)
-	case cmdBark:
+	case data.CmdBark:
 		handleBark(sess, inter)
-	case cmdBarkat:
+	case data.CmdBarkat:
 		handleBarkAt(sess, inter)
-	case cmdDoflip:
+	case data.CmdDoflip:
 		handleImageCmd(sess, inter, "Woah!", "res/flip.png")
-	case cmdExplode:
+	case data.CmdExplode:
 		handleImageCmd(sess, inter, "WHAAAAAAAA-", "res/boom.png")
-	case cmdSpin:
+	case data.CmdSpin:
 		// uhh yes im using handleImageCmd for sending a gif
 		// and what? what you gonna do?
 		handleImageCmd(sess, inter, "Wooooooo", "res/gif/spin.gif")
-	case cmdCat:
+	case data.CmdCat:
 		handleCat(sess, inter)
-	case cmdCart:
+	case data.CmdCart:
 		handleImageCmd(sess, inter, "Cart!", "res/cart.png")
-	case cmdRoulette:
+	case data.CmdRoulette:
 		handleRoulette(sess, inter)
-	case cmdAssault:
+	case data.CmdAssault:
 		handleAssault(sess, inter)
-	case cmdWork:
+	case data.CmdWork:
 		handleWork(sess, inter)
-	case cmdBalance:
+	case data.CmdBalance:
 		handleBalance(sess, inter)
-	case cmdTransfer:
+	case data.CmdTransfer:
 		handleTransfer(sess, inter)
-	case cmdSteal:
+	case data.CmdSteal:
 		handleSteal(sess, inter)
-	case cmdShop:
+	case data.CmdShop:
 		handleShop(sess, inter)
-	case cmdBuy:
+	case data.CmdBuy:
 		handleBuy(sess, inter)
-	case cmdInventory:
+	case data.CmdInventory:
 		handleInventory(sess, inter)
-	case cmdLeaderboard:
+	case data.CmdLeaderboard:
 		handleLeaderboard(sess, inter)
-	case cmdEat:
+	case data.CmdEat:
 		handleEat(sess, inter)
 	}
 }
