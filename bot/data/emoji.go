@@ -7,7 +7,14 @@ var (
 	// so just please dont change them
 	EmojiCykodigo = emoji("cykodigo", "1399481322866741388")
 	EmojiCatr     = emoji("catr", "1399481457977856172")
+
+	EmojiReactCykodigo = reactionEmoji("cykodigo", "1399481322866741388")
+	EmojiReactCatr     = reactionEmoji("catr", "1399481457977856172")
 )
+
+func reactionEmoji(name string, id string) string {
+	return fmt.Sprintf("%v:%v", name, id)
+}
 
 func emoji(name string, id string) string {
 	return fmt.Sprintf("<:%v:%v>", name, id)

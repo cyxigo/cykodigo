@@ -44,6 +44,7 @@ func handleMsgBotUsername(sess *discordgo.Session, msg *discordgo.MessageCreate)
 			"Never gonna make you cry, never gonna say goodbye\nNever gonna tell a lie and hurt you",
 	}
 
+	sess.MessageReactionAdd(msg.ChannelID, msg.ID, data.EmojiReactCykodigo)
 	sess.ChannelMessageSend(msg.ChannelID, variants[rand.IntN(len(variants))])
 }
 
