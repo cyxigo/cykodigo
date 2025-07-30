@@ -75,7 +75,7 @@ func getSender(sess *discordgo.Session, inter *discordgo.InteractionCreate) (*di
 
 	// how
 	if sender == nil {
-		respond(sess, inter, "Couldn't get interaction sender :<", nil, false)
+		respond(sess, inter, "Couldn't get interaction sender", nil, false)
 		return nil, false
 	}
 
@@ -102,7 +102,7 @@ func getTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate, requ
 	// i genuinely dont know how this can fail but anyways heres check
 	// if we somehow didnt find user
 	if required && target == nil {
-		respond(sess, inter, "Couldn't find target user :<", nil, false)
+		respond(sess, inter, "Couldn't find target user", nil, false)
 		return nil, false
 	}
 
@@ -145,7 +145,7 @@ func getItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	price, exists := data.ShopItems[item]
 
 	if !exists {
-		content := fmt.Sprintf("There's no item **%v**!!!", item)
+		content := fmt.Sprintf("There's no item **%v**", item)
 		respond(sess, inter, content, nil, false)
 
 		return "", 0, false
@@ -174,7 +174,7 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 
 	if err != nil {
 		log.Printf("Error opening '%v': %v", imgPath, err)
-		respond(sess, inter, "Couldn't open image :<", nil, false)
+		respond(sess, inter, "Couldn't open image", nil, false)
 
 		return
 	}
@@ -213,7 +213,7 @@ func beginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, cmd st
 	if err != nil {
 		log.Printf("Failed to begin transaction in /%v: %v", cmd, err)
 
-		content := fmt.Sprintf("Failed to start /%v :<", cmd)
+		content := fmt.Sprintf("Failed to start /%v", cmd)
 		respond(sess, inter, content, nil, false)
 
 		return nil, false
@@ -227,7 +227,7 @@ func commitTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *s
 	if err := tx.Commit(); err != nil {
 		log.Printf("Commit error in /%v: %v", cmd, err)
 
-		content := fmt.Sprintf("Failed to finish /%v :<", cmd)
+		content := fmt.Sprintf("Failed to finish /%v", cmd)
 		respond(sess, inter, content, nil, false)
 
 		return false
@@ -250,8 +250,8 @@ func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx 
 		userID, value, value)
 
 	if err != nil {
-		log.Printf("Cooldown update error in /%s: %v", cmd, err)
-		respond(sess, inter, "Failed to update cooldown :<", nil, false)
+		log.Printf("Cooldown update error in /%v: %v", cmd, err)
+		respond(sess, inter, "Failed to update cooldown", nil, false)
 
 		return false
 	}
@@ -272,7 +272,7 @@ func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 
 	if err != nil {
 		log.Printf("Addition error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to add money :<", nil, false)
+		respond(sess, inter, "Failed to add money", nil, false)
 
 		return false
 	}

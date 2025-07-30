@@ -67,7 +67,7 @@ func handleMsgNature(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 
 	if err != nil {
 		log.Printf("Error opening '%v': %v", imgPath, err)
-		sess.ChannelMessageSend(msg.ChannelID, "Couldn't open image :<")
+		sess.ChannelMessageSend(msg.ChannelID, "Couldn't open image")
 
 		return
 	}
@@ -82,7 +82,7 @@ func handleMsgNature(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		Reader: file,
 	}
 	embed := &discordgo.MessageEmbed{
-		Description: "**RULES OF NATURE!!!**",
+		Description: "**RULES OF NATURE**",
 		Color:       data.DefaultEmbedColor,
 		Image: &discordgo.MessageEmbedImage{
 			URL: "attachment://" + imgName,

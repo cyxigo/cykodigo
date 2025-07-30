@@ -14,16 +14,16 @@ const (
 	CmdSpin        = "spin"
 	CmdCat         = "cat"
 	CmdCart        = "cart"
-	CmdRoulette    = "roulette"
 	CmdAssault     = "assault"
-	CmdWork        = "work"
 	CmdBalance     = "balance"
-	CmdTransfer    = "transfer"
-	CmdSteal       = "steal"
 	CmdShop        = "shop"
-	CmdBuy         = "buy"
 	CmdInventory   = "inventory"
 	CmdLeaderboard = "leaderboard"
+	CmdRoulette    = "roulette"
+	CmdWork        = "work"
+	CmdTransfer    = "transfer"
+	CmdSteal       = "steal"
+	CmdBuy         = "buy"
 	CmdEat         = "eat"
 	CmdHigh        = "high"
 
@@ -52,7 +52,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        CmdMeowat,
-		Description: "Meow at someone!",
+		Description: "Meow at someone",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
@@ -68,7 +68,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        CmdBarkat,
-		Description: "Bark at someone!", Options: []*discordgo.ApplicationCommandOption{
+		Description: "Bark at someone", Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "member",
@@ -95,11 +95,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        CmdCart,
-		Description: "Cart! (totally NOT copied from Cat Bot hehe)",
-	},
-	{
-		Name:        CmdRoulette,
-		Description: "Why don't we play a little game?",
+		Description: "Cart!",
 	},
 	{
 		Name:        CmdAssault,
@@ -120,18 +116,46 @@ var Cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdWork,
-		Description: "Work and get paid! Money!1!11!!",
-	},
-	{
 		Name:        CmdBalance,
-		Description: "Balance! Check how much money you've got from hard work",
+		Description: "Check how much money you've got from hard work",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "member",
 				Description: "Person whose balance to show (optional)",
 				Required:    false,
+			},
+		},
+	},
+	{
+		Name:        CmdShop,
+		Description: "View available items",
+	},
+	{
+		Name:        CmdInventory,
+		Description: "Check your items that you've bought",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "member",
+				Description: "Person whose inventory to show (optional)",
+				Required:    false,
+			},
+		},
+	},
+	{
+		Name:        CmdLeaderboard,
+		Description: "Show top-10 users with diamonds",
+	},
+	{
+		Name:        CmdRoulette,
+		Description: "Try to win and not lose your money!",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "Amount of money to gamble",
+				Required:    true,
 			},
 		},
 	},
@@ -154,8 +178,12 @@ var Cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:        CmdWork,
+		Description: "Work and get paid",
+	},
+	{
 		Name:        CmdSteal,
-		Description: "Steal money from someone! You can fail though, be careful.",
+		Description: "Steal money from someone; you can fail though, be careful",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
@@ -166,12 +194,8 @@ var Cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdShop,
-		Description: "Shop!!! Buy things, lose your money!1!11!!",
-	},
-	{
 		Name:        CmdBuy,
-		Description: "Buy item!1!11!!", Options: []*discordgo.ApplicationCommandOption{
+		Description: "Buy an item", Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "item",
@@ -179,22 +203,6 @@ var Cmds = []*discordgo.ApplicationCommand{
 				Required:    true,
 			},
 		},
-	},
-	{
-		Name:        CmdInventory,
-		Description: "Inventory! Check your items that you've bought",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
-				Description: "Person whose inventory to show (optional)",
-				Required:    false,
-			},
-		},
-	},
-	{
-		Name:        CmdLeaderboard,
-		Description: "Leaderboard! Compete!!! Diamonds!1!11!!",
 	},
 	{
 		Name:        CmdEat,

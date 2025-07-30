@@ -26,14 +26,14 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"Meow-meow!"
 	website := "**My website!**\n" +
 		"I don't think anyone will look in here, but [here](https://cyxigo.github.io/cykodigo-io/) " +
-		fmt.Sprintf("my super duper website %s\n", data.EmojiCykodigo) +
+		fmt.Sprintf("my super duper website %v\n", data.EmojiCykodigo) +
 		"P.S for nerds: Terms of Service and Privacy Policy are also there"
 
 	featureEmbed := data.EmbedText(features)
 	otherFeaturesEmbed := data.EmbedText(otherFeatures)
 	websiteEmbed := data.EmbedText(website)
 
-	content := fmt.Sprintf("**Super-duper manual %s**\n", data.EmojiCykodigo) +
+	content := fmt.Sprintf("**Super-duper manual %v**\n", data.EmojiCykodigo) +
 		"-# Copyright (c) 2025 cyxigo"
 
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{
@@ -69,7 +69,7 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Error reading res/cat: %v", err)
-		respond(sess, inter, "Couldn't find any cats :<", nil, false)
+		respond(sess, inter, "Couldn't find any cats", nil, false)
 
 		return
 	}
@@ -94,17 +94,6 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	handleImageCmd(sess, inter, "Cat!", path)
 }
 
-func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	result := "**Victory!!!** You're alive!!!"
-	bullet := 3
-
-	if rand.IntN(5) == bullet {
-		result = "Sorry, you're dead, better luck next ti- uhh.."
-	}
-
-	respond(sess, inter, result, nil, false)
-}
-
 func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	db, ok := database.GetDB(inter.GuildID)
 
@@ -126,7 +115,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	}
 
 	if !data.IsWeapon(item) {
-		content := fmt.Sprintf("Item **%v** isn't a weapon!!!", item)
+		content := fmt.Sprintf("Item **%v** isn't a weapon", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -143,13 +132,13 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	if err != nil {
 		log.Printf("Failed to scan row in /assault: %v", err)
-		respond(sess, inter, "Failed to check inventory :<", nil, false)
+		respond(sess, inter, "Failed to check inventory", nil, false)
 
 		return
 	}
 
 	if count == 0 {
-		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory!!!", item), nil, false)
+		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory", item), nil, false)
 		return
 	}
 
@@ -188,80 +177,6 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	respond(sess, inter, content, nil, true)
 }
 
-func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, ok := getSender(sess, inter)
-
-	if !ok {
-		return
-	}
-
-	tx, ok := beginTx(sess, inter, data.CmdWork)
-
-	if !ok {
-		return
-	}
-
-	defer tx.Rollback()
-
-	lastWork := int64(0)
-	err := tx.QueryRow(
-		`
-		SELECT last_work 
-		FROM cooldowns 
-		WHERE user_id = ?
-		`, sender.ID).Scan(&lastWork)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Failed to scan row in /work: %v", err)
-		respond(sess, inter, "Failed to check work cooldown :<", nil, false)
-
-		return
-	}
-
-	const cooldown = 10 * 60
-	currentTime := time.Now().Unix()
-
-	if currentTime-lastWork < cooldown {
-		remaining := cooldown - (currentTime - lastWork)
-		content := fmt.Sprintf("You need to wait **%vm %vs** before working again!!!", remaining/60, remaining%60)
-
-		respond(sess, inter, content, nil, false)
-
-		return
-	}
-
-	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
-	// random number from range 100-200
-	money := rand.IntN(100) + 100
-
-	if isHigh {
-		// apply 30% reduction if high
-		money = int(float64(money) * 0.7)
-	}
-
-	if !txMoneyOp(sess, inter, tx, sender.ID, money, "+", data.CmdWork) {
-		return
-	}
-
-	if !txUpdateCd(sess, inter, tx, sender.ID, "last_work", currentTime, data.CmdWork) {
-		return
-	}
-
-	if !commitTx(sess, inter, tx, data.CmdWork) {
-		return
-	}
-
-	content := ""
-
-	if isHigh {
-		content = fmt.Sprintf("You are **high** %s Actually, it's not good... Money from work has decreased!!!\n",
-			data.EmojiCatr)
-	}
-
-	content += fmt.Sprintf("You worked and got **%v** money!", money)
-	respond(sess, inter, content, nil, false)
-}
-
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	db, ok := database.GetDB(inter.GuildID)
 
@@ -285,7 +200,7 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Failed to scan row in /balance: %v", err)
-		respond(sess, inter, "Failed to check balance :<", nil, false)
+		respond(sess, inter, "Failed to check balance", nil, false)
 
 		return
 	}
@@ -294,180 +209,10 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	respond(sess, inter, content, nil, true)
 }
 
-func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, target, ok := getSenderAndTarget(sess, inter)
-
-	if !ok {
-		return
-	}
-
-	if sender.ID == target.ID {
-		respond(sess, inter, "You can't transfer money to yourself!!!", nil, false)
-		return
-	}
-
-	options := inter.ApplicationCommandData().Options
-	amount := (int)(options[1].Value.(float64))
-
-	if amount <= 0 {
-		respond(sess, inter, "Transfer amount must be positive!!!", nil, false)
-		return
-	}
-
-	tx, ok := beginTx(sess, inter, data.CmdTransfer)
-
-	if !ok {
-		return
-	}
-
-	defer tx.Rollback()
-
-	balance := database.TxGetUserBalance(tx, sender.ID)
-
-	if balance < amount {
-		respond(sess, inter, "You don't have enough money for this transfer!!!", nil, false)
-		return
-	}
-
-	if !txMoneyOp(sess, inter, tx, sender.ID, amount, "-", data.CmdTransfer) {
-		return
-	}
-
-	if !txMoneyOp(sess, inter, tx, target.ID, amount, "+", data.CmdTransfer) {
-		return
-	}
-
-	if !commitTx(sess, inter, tx, data.CmdTransfer) {
-		return
-	}
-
-	response := fmt.Sprintf("%v transferred %v money to %v", sender.Mention(), amount, target.Mention())
-	respond(sess, inter, response, nil, true)
-}
-
-func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := database.GetDB(inter.GuildID)
-
-	if !ok {
-		return
-	}
-
-	sender, target, ok := getSenderAndTarget(sess, inter)
-
-	if !ok {
-		return
-	}
-
-	if sender.ID == target.ID {
-		respond(sess, inter, "You can't steal from yourself!!!", nil, false)
-		return
-	}
-
-	tx, ok := beginTx(sess, inter, data.CmdSteal)
-
-	if !ok {
-		return
-	}
-
-	defer tx.Rollback()
-
-	targetBalance := database.TxGetUserBalance(tx, target.ID)
-
-	if targetBalance <= 0 {
-		content := fmt.Sprintf("%v is **broke!** Nothing to steal", target.Mention())
-		respond(sess, inter, content, nil, true)
-
-		return
-	}
-
-	lastStealFail := int64(0)
-	err := db.QueryRow(
-		`
-		SELECT last_steal_fail 
-		FROM cooldowns 
-		WHERE user_id = ?
-		`, sender.ID).Scan(&lastStealFail)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Failed to scan row in /steal: %v", err)
-		respond(sess, inter, "Failed to check steal cooldown :<", nil, false)
-
-		return
-	}
-
-	const cooldown = 20 * 60
-	currentTime := time.Now().Unix()
-
-	if currentTime-lastStealFail < cooldown {
-		remaining := cooldown - (currentTime - lastStealFail)
-		content := fmt.Sprintf("You need to wait **%vm %vs** before stealing again after failure!!!", remaining/60,
-			remaining%60)
-
-		respond(sess, inter, content, nil, false)
-
-		return
-	}
-
-	content := ""
-	successChance := 50
-	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
-
-	if isHigh {
-		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %s...\n", data.EmojiCatr)
-		successChance = 80
-	}
-
-	if rand.IntN(100) < successChance {
-		targetBalance := database.TxGetUserBalance(tx, target.ID)
-
-		// max() all stuff so we cant get 0 from stealing lol
-		// some of this may not be necessary but whatever
-		stealPercent := max(1, rand.IntN(51))
-		stealAmount := max(1, (stealPercent*targetBalance)/100)
-
-		if !txMoneyOp(sess, inter, tx, target.ID, stealAmount, "-", data.CmdSteal) {
-			return
-		}
-
-		if !txMoneyOp(sess, inter, tx, sender.ID, stealAmount, "+", data.CmdSteal) {
-			return
-		}
-
-		content += fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
-	} else {
-		const penalty = 20
-
-		if !txMoneyOp(sess, inter, tx, sender.ID, penalty, "-", data.CmdSteal) {
-			return
-		}
-
-		if !txUpdateCd(sess, inter, tx, sender.ID, "last_steal_fail", currentTime, data.CmdSteal) {
-			return
-		}
-
-		if isHigh {
-			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
-				"Even being **high** couldn't help you %s",
-				target.Mention(), penalty, data.EmojiCatr)
-		} else {
-			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money! :<\n"+
-				"**Pro tip:** being **high** increases chances of a successful steal %s",
-				target.Mention(), penalty, data.EmojiCatr)
-		}
-
-	}
-
-	if !commitTx(sess, inter, tx, data.CmdSteal) {
-		return
-	}
-
-	respond(sess, inter, content, nil, true)
-}
-
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	builder := strings.Builder{}
-	content := fmt.Sprintf("**Shop %s**\n", data.EmojiCykodigo) +
-		"-# Use `/buy [item]` to buy something!!!"
+	content := fmt.Sprintf("**Shop %v**\n", data.EmojiCykodigo) +
+		"-# Use `/buy [item]` to buy something"
 
 	for item, price := range data.ShopItems {
 		itemString := fmt.Sprintf("- %v: %v money\n", item, price)
@@ -476,54 +221,6 @@ func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	embed := data.EmbedText(builder.String())
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
-}
-
-func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	sender, ok := getSender(sess, inter)
-
-	if !ok {
-		return
-	}
-
-	item, price, ok := getItemFromOption(sess, inter, 0)
-
-	if !ok {
-		return
-	}
-
-	tx, ok := beginTx(sess, inter, data.CmdBuy)
-
-	if !ok {
-		return
-	}
-
-	defer tx.Rollback()
-
-	balance := database.TxGetUserBalance(tx, sender.ID)
-
-	if balance < price {
-		content := fmt.Sprintf("Too broke for **%v**, go work!!!", item)
-		respond(sess, inter, content, nil, false)
-
-		return
-	}
-
-	if !txMoneyOp(sess, inter, tx, sender.ID, price, "-", data.CmdBuy) {
-		return
-	}
-
-	if _, err := tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item); err != nil {
-		log.Printf("Insert error in /inventory: %v", err)
-		respond(sess, inter, "Failed to add item to inventory :<", nil, false)
-
-		return
-	}
-
-	if !commitTx(sess, inter, tx, data.CmdBuy) {
-		return
-	}
-
-	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money", item, price), nil, false)
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -548,7 +245,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 	if err != nil {
 		log.Printf("Query error in /inventory: %v", err)
-		respond(sess, inter, "Failed to check inventory :<", nil, false)
+		respond(sess, inter, "Failed to check inventory", nil, false)
 
 		return
 	}
@@ -608,7 +305,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	if err != nil {
 		log.Printf("Query error in /leaderboard: %v", err)
-		respond(sess, inter, "Failed to check leaderboard :<", nil, false)
+		respond(sess, inter, "Failed to check leaderboard", nil, false)
 
 		return
 	}
@@ -650,16 +347,377 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	if len(leaderboard) == 0 {
 		content := "No one has diamonds yet\n" +
 			"Such an empty leaderboard\n" +
-			"Buy some with `/buy diamond`!!!"
+			"Buy some with `/buy diamond`"
 		respond(sess, inter, content, nil, false)
 
 		return
 	}
 
 	content := "**Diamond Leaderboard**\n" +
-		"-# Buy some with `/buy diamond`!!!"
+		"-# Buy some with `/buy diamond`"
 	embed := data.EmbedText(strings.Join(leaderboard, "\n"))
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
+}
+
+func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, ok := getSender(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	options := inter.ApplicationCommandData().Options
+	bet := int(options[0].Value.(float64))
+
+	if bet < 100 {
+		respond(sess, inter, "Minimum bet is 100 money", nil, false)
+		return
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdRoulette)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	balance := database.TxGetUserBalance(tx, sender.ID)
+
+	if balance < bet {
+		respond(sess, inter, "You don't have enough money for this bet, go work", nil, false)
+		return
+	}
+
+	if !txMoneyOp(sess, inter, tx, sender.ID, bet, "-", data.CmdRoulette) {
+		return
+	}
+
+	content := ""
+	successChance := 30
+	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
+
+	if isHigh {
+		content = fmt.Sprintf("You are **high**, chances of successful bet has increased %v...\n", data.EmojiCatr)
+		successChance = 50
+	}
+
+	if rand.IntN(100) < successChance {
+		winnings := bet * 3
+
+		if !txMoneyOp(sess, inter, tx, sender.ID, winnings, "+", data.CmdRoulette) {
+			return
+		}
+
+		content += fmt.Sprintf("%v **JACKPOT!** You won **%v** money!", data.EmojiCykodigo, winnings)
+	} else {
+		if isHigh {
+			content = fmt.Sprintf("You lost your bet of **%v** money. Better luck next time\n"+
+				"Even being **high** couldn't help you %v",
+				bet, data.EmojiCatr)
+		} else {
+			content = fmt.Sprintf("You lost your bet of **%v** money. Better luck next time\n"+
+				"**Pro tip:** being **high** increases chances of a successful bet %v",
+				bet, data.EmojiCatr)
+		}
+	}
+
+	if !commitTx(sess, inter, tx, data.CmdRoulette) {
+		return
+	}
+
+	respond(sess, inter, content, nil, false)
+}
+
+func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, ok := getSender(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdWork)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	lastWork := int64(0)
+	err := tx.QueryRow(
+		`
+		SELECT last_work 
+		FROM cooldowns 
+		WHERE user_id = ?
+		`, sender.ID).Scan(&lastWork)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Failed to scan row in /work: %v", err)
+		respond(sess, inter, "Failed to check work cooldown", nil, false)
+
+		return
+	}
+
+	const cooldown = 10 * 60
+	currentTime := time.Now().Unix()
+
+	if currentTime-lastWork < cooldown {
+		remaining := cooldown - (currentTime - lastWork)
+		content := fmt.Sprintf("You need to wait **%vm %vs** before working again", remaining/60, remaining%60)
+
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
+	// random number from range 100-200
+	money := rand.IntN(100) + 100
+
+	if isHigh {
+		// apply 30% reduction if high
+		money = int(float64(money) * 0.7)
+	}
+
+	if !txMoneyOp(sess, inter, tx, sender.ID, money, "+", data.CmdWork) {
+		return
+	}
+
+	if !txUpdateCd(sess, inter, tx, sender.ID, "last_work", currentTime, data.CmdWork) {
+		return
+	}
+
+	if !commitTx(sess, inter, tx, data.CmdWork) {
+		return
+	}
+
+	content := ""
+
+	if isHigh {
+		content = fmt.Sprintf("You are **high** %v Actually, it's not good... Money from work has decreased\n",
+			data.EmojiCatr)
+	}
+
+	content += fmt.Sprintf("You worked and got **%v** money!", money)
+	respond(sess, inter, content, nil, false)
+}
+
+func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, target, ok := getSenderAndTarget(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	if sender.ID == target.ID {
+		respond(sess, inter, "You can't transfer money to yourself", nil, false)
+		return
+	}
+
+	options := inter.ApplicationCommandData().Options
+	amount := (int)(options[1].Value.(float64))
+
+	if amount <= 0 {
+		respond(sess, inter, "Transfer amount must be positive", nil, false)
+		return
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdTransfer)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	balance := database.TxGetUserBalance(tx, sender.ID)
+
+	if balance < amount {
+		respond(sess, inter, "You don't have enough money for this transfer", nil, false)
+		return
+	}
+
+	if !txMoneyOp(sess, inter, tx, sender.ID, amount, "-", data.CmdTransfer) {
+		return
+	}
+
+	if !txMoneyOp(sess, inter, tx, target.ID, amount, "+", data.CmdTransfer) {
+		return
+	}
+
+	if !commitTx(sess, inter, tx, data.CmdTransfer) {
+		return
+	}
+
+	response := fmt.Sprintf("%v transferred %v money to %v", sender.Mention(), amount, target.Mention())
+	respond(sess, inter, response, nil, true)
+}
+
+func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	db, ok := database.GetDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
+	sender, target, ok := getSenderAndTarget(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	if sender.ID == target.ID {
+		respond(sess, inter, "You can't steal from yourself", nil, false)
+		return
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdSteal)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	targetBalance := database.TxGetUserBalance(tx, target.ID)
+
+	if targetBalance <= 0 {
+		content := fmt.Sprintf("%v is **broke!** Nothing to steal", target.Mention())
+		respond(sess, inter, content, nil, true)
+
+		return
+	}
+
+	lastStealFail := int64(0)
+	err := db.QueryRow(
+		`
+		SELECT last_steal_fail 
+		FROM cooldowns 
+		WHERE user_id = ?
+		`, sender.ID).Scan(&lastStealFail)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Failed to scan row in /steal: %v", err)
+		respond(sess, inter, "Failed to check steal cooldown", nil, false)
+
+		return
+	}
+
+	const cooldown = 20 * 60
+	currentTime := time.Now().Unix()
+
+	if currentTime-lastStealFail < cooldown {
+		remaining := cooldown - (currentTime - lastStealFail)
+		content := fmt.Sprintf("You need to wait **%vm %vs** before stealing again after failure", remaining/60,
+			remaining%60)
+
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	content := ""
+	successChance := 50
+	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
+
+	if isHigh {
+		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %v...\n", data.EmojiCatr)
+		successChance = 80
+	}
+
+	if rand.IntN(100) < successChance {
+		targetBalance := database.TxGetUserBalance(tx, target.ID)
+
+		// max() all stuff so we cant get 0 from stealing lol
+		// some of this may not be necessary but whatever
+		stealPercent := max(1, rand.IntN(51))
+		stealAmount := max(1, (stealPercent*targetBalance)/100)
+
+		if !txMoneyOp(sess, inter, tx, target.ID, stealAmount, "-", data.CmdSteal) {
+			return
+		}
+
+		if !txMoneyOp(sess, inter, tx, sender.ID, stealAmount, "+", data.CmdSteal) {
+			return
+		}
+
+		content += fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
+	} else {
+		const penalty = 20
+
+		if !txMoneyOp(sess, inter, tx, sender.ID, penalty, "-", data.CmdSteal) {
+			return
+		}
+
+		if !txUpdateCd(sess, inter, tx, sender.ID, "last_steal_fail", currentTime, data.CmdSteal) {
+			return
+		}
+
+		if isHigh {
+			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money\n"+
+				"Even being **high** couldn't help you %v",
+				target.Mention(), penalty, data.EmojiCatr)
+		} else {
+			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money\n"+
+				"**Pro tip:** being **high** increases chances of a successful steal %v",
+				target.Mention(), penalty, data.EmojiCatr)
+		}
+	}
+
+	if !commitTx(sess, inter, tx, data.CmdSteal) {
+		return
+	}
+
+	respond(sess, inter, content, nil, true)
+}
+
+func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, ok := getSender(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	item, price, ok := getItemFromOption(sess, inter, 0)
+
+	if !ok {
+		return
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdBuy)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	balance := database.TxGetUserBalance(tx, sender.ID)
+
+	if balance < price {
+		content := fmt.Sprintf("Too broke for **%v**, go work", item)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	if !txMoneyOp(sess, inter, tx, sender.ID, price, "-", data.CmdBuy) {
+		return
+	}
+
+	if _, err := tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item); err != nil {
+		log.Printf("Insert error in /inventory: %v", err)
+		respond(sess, inter, "Failed to add item to inventory", nil, false)
+
+		return
+	}
+
+	if !commitTx(sess, inter, tx, data.CmdBuy) {
+		return
+	}
+
+	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money", item, price), nil, false)
 }
 
 func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -676,7 +734,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	if !data.IsFood(item) {
-		content := fmt.Sprintf("You can't eat **%v**!!!", item)
+		content := fmt.Sprintf("You can't eat **%v**", item)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -701,13 +759,13 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Failed to scan row in /eat: %v", err)
-		respond(sess, inter, "Failed to check inventory :<", nil, false)
+		respond(sess, inter, "Failed to check inventory", nil, false)
 
 		return
 	}
 
 	if count == 0 {
-		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory!!!", item), nil, false)
+		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory", item), nil, false)
 		return
 	}
 
@@ -725,7 +783,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Delete error in /eat: %v", err)
-		respond(sess, inter, "Failed to get inventory :<", nil, false)
+		respond(sess, inter, "Failed to get inventory", nil, false)
 
 		return
 	}
@@ -748,7 +806,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		if err != nil {
 			log.Printf("Failed to update meth effect in /eat: %v", err)
-			respond(sess, inter, "Failed to get **high** :<", nil, false)
+			respond(sess, inter, "Failed to get **high**", nil, false)
 
 			return
 		}
@@ -764,7 +822,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		if err != nil {
 			log.Printf("Failed to get updated end time in /eat: %v", err)
-			respond(sess, inter, "Failed to get **high** :<", nil, false)
+			respond(sess, inter, "Failed to get **high**", nil, false)
 
 			return
 		}
@@ -781,7 +839,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if item == data.ItemMeth {
 		content := fmt.Sprintf("You ate %v! Wowowowowowowowowowo the world is spinning wowowowowowo...\n\n"+
-			"You're now high for %vm %vs %s", item, duration/60, duration%60, data.EmojiCatr)
+			"You're now high for %vm %vs %v", item, duration/60, duration%60, data.EmojiCatr)
 		handleImageCmd(sess, inter, content, "res/gif/spin.gif")
 	} else {
 		message := "Yummy! " + data.EmojiCykodigo
@@ -796,7 +854,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			message = "Crunchy dammit!"
 		}
 
-		content := fmt.Sprintf("You ate **%v**! %s", item, message)
+		content := fmt.Sprintf("You ate **%v**! %v", item, message)
 		respond(sess, inter, content, nil, false)
 	}
 }
@@ -820,10 +878,10 @@ func handleHigh(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if isHigh {
 		remaining := endTime - currentTime
-		content = fmt.Sprintf("%s is **high**! Wowowowowowowo...\nTime remaining: **%vm %vs**%s",
+		content = fmt.Sprintf("%v is **high**! Wowowowowowowo...\nTime remaining: **%vm %vs**%v",
 			target.Mention(), remaining/60, remaining%60, data.EmojiCatr)
 	} else {
-		content = fmt.Sprintf("%s isn't **high**! Lame", target.Mention())
+		content = fmt.Sprintf("%v isn't **high**! Lame", target.Mention())
 	}
 
 	respond(sess, inter, content, nil, true)
@@ -856,33 +914,31 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	case data.CmdExplode:
 		handleImageCmd(sess, inter, "WHAAAAAAAA-", "res/boom.png")
 	case data.CmdSpin:
-		// uhh yes im using handleImageCmd for sending a gif
-		// and what? what you gonna do?
 		handleImageCmd(sess, inter, "Wooooooo", "res/gif/spin.gif")
 	case data.CmdCat:
 		handleCat(sess, inter)
 	case data.CmdCart:
 		handleImageCmd(sess, inter, "Cart!", "res/cart.png")
-	case data.CmdRoulette:
-		handleRoulette(sess, inter)
 	case data.CmdAssault:
 		handleAssault(sess, inter)
-	case data.CmdWork:
-		handleWork(sess, inter)
 	case data.CmdBalance:
 		handleBalance(sess, inter)
-	case data.CmdTransfer:
-		handleTransfer(sess, inter)
-	case data.CmdSteal:
-		handleSteal(sess, inter)
 	case data.CmdShop:
 		handleShop(sess, inter)
-	case data.CmdBuy:
-		handleBuy(sess, inter)
 	case data.CmdInventory:
 		handleInventory(sess, inter)
 	case data.CmdLeaderboard:
 		handleLeaderboard(sess, inter)
+	case data.CmdRoulette:
+		handleRoulette(sess, inter)
+	case data.CmdWork:
+		handleWork(sess, inter)
+	case data.CmdTransfer:
+		handleTransfer(sess, inter)
+	case data.CmdSteal:
+		handleSteal(sess, inter)
+	case data.CmdBuy:
+		handleBuy(sess, inter)
 	case data.CmdEat:
 		handleEat(sess, inter)
 	case data.CmdHigh:

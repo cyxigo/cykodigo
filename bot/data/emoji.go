@@ -10,5 +10,5 @@ var (
 )
 
 func emoji(name string, id string) string {
-	return fmt.Sprintf("<:%s:%s>", name, id)
+	return fmt.Sprintf("<:%v:%v>", name, id)
 }
