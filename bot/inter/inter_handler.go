@@ -403,7 +403,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high**, chances of successful bet has increased %v...\n", data.EmojiCatr)
+		content = fmt.Sprintf("You are **high**, chances of successful bet has increased %v\n", data.EmojiCatr)
 		successChance = 50
 	}
 
@@ -627,7 +627,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %v...\n", data.EmojiCatr)
+		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %v\n", data.EmojiCatr)
 		successChance = 80
 	}
 
