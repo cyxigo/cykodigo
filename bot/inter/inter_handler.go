@@ -28,10 +28,14 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"I don't think anyone will look in here, but [here](https://cyxigo.github.io/cykodigo-io/) " +
 		fmt.Sprintf("my super duper website %v\n", data.EmojiCykodigo) +
 		"P.S for nerds: Terms of Service and Privacy Policy are also there"
+	waitWhat := "**Wait what? I have no money on another server, this bot is stupid!**\n" +
+		"Well, it's not a bot, it's you. cykodigo is smart, cykodigo thinks it will be more fun if each server had " +
+		"their own local money"
 
 	featureEmbed := data.EmbedText(features)
 	otherFeaturesEmbed := data.EmbedText(otherFeatures)
 	websiteEmbed := data.EmbedText(website)
+	waitWhatEmbed := data.EmbedText(waitWhat)
 
 	content := fmt.Sprintf("**Super-duper manual %v**\n", data.EmojiCykodigo) +
 		"-# Copyright (c) 2025 cyxigo"
@@ -40,6 +44,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		featureEmbed,
 		otherFeaturesEmbed,
 		websiteEmbed,
+		waitWhatEmbed,
 	}, false)
 }
 
@@ -472,8 +477,8 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
-	// random number from range 100-200
-	money := rand.IntN(100) + 100
+	// random number from range 100-400
+	money := rand.IntN(300) + 100
 
 	if isHigh {
 		// apply 30% reduction if high
