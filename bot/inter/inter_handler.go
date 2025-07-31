@@ -512,7 +512,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	response := fmt.Sprintf("%v transferred %v money to %v %v", sender.Mention(), amount, target.Mention(),
+	response := fmt.Sprintf("%v transferred **%v** money to %v %v", sender.Mention(), amount, target.Mention(),
 		data.EmojiCykodigo)
 	respond(sess, inter, response, nil, true)
 }

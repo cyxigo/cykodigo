@@ -31,10 +31,9 @@ func initDB(db *sql.DB, name string) bool {
 			last_steal_fail INTEGER NOT NULL DEFAULT 0
 		);
 		CREATE TABLE IF NOT EXISTS inventory (
-			user_id TEXT NOT NULL,
+			user_id TEXT PRIMARY KEY,
 			item TEXT NOT NULL,
-			amount INTEGER NOT NULL DEFAULT 1,
-			UNIQUE(user_id, item)
+			amount INTEGER NOT NULL DEFAULT 1
 		);
 		CREATE TABLE IF NOT EXISTS meth_effects (
 			user_id TEXT PRIMARY KEY,
