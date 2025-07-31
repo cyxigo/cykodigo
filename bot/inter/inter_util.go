@@ -154,6 +154,8 @@ func getItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	return item, int64(price), true
 }
 
+// util function for getting optional item amount
+// will return 1 if amount isnt specified
 func getItemAmountOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, action string, idx int) (
 	int64, bool) {
 	options := inter.ApplicationCommandData().Options
