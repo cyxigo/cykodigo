@@ -92,12 +92,6 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := database.GetDB(inter.GuildID)
-
-	if !ok {
-		return
-	}
-
 	sender, target, ok := getSenderAndTarget(sess, inter)
 
 	if !ok {
@@ -118,28 +112,13 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	count := 0
-	err := db.QueryRow(
-		`
-		SELECT COUNT(*) 
-		FROM inventory 
-		WHERE user_id = ? AND item = ?
-		`,
-		sender.ID, item).Scan(&count)
+	tx, ok := beginTx(sess, inter, data.CmdAssault)
 
-	if err != nil {
-		log.Printf("Count error in /assault: %v", err)
-		respond(sess, inter, "Failed to check inventory", nil, false)
-
+	if !ok || !checkInventory(sess, inter, tx, sender.ID, item, 1, data.CmdAssault) {
 		return
 	}
 
-	if count == 0 {
-		content := fmt.Sprintf("You don't have **%v** in your inventory", item)
-		respond(sess, inter, content, nil, false)
-
-		return
-	}
+	defer tx.Rollback()
 
 	if !ok {
 		return
@@ -237,7 +216,7 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 	rows, err := db.Query(
 		`
-		SELECT item 
+		SELECT item, amount
 		FROM inventory 
 		WHERE user_id = ?
 		`, target.ID)
@@ -257,13 +236,14 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 	for rows.Next() {
 		item := ""
+		amount := 0
 
-		if err := rows.Scan(&item); err != nil {
+		if err := rows.Scan(&item, &amount); err != nil {
 			log.Printf("Failed to scan row in /inventory: %v", err)
 			continue
 		}
 
-		items[item]++
+		items[item] = amount
 	}
 
 	if len(items) == 0 {
@@ -294,13 +274,12 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	rows, err := db.Query(
 		`
-		SELECT user_id, COUNT(*) AS diamond_count
-		FROM inventory
-		WHERE item = ?
-		GROUP BY user_id
-		ORDER BY diamond_count DESC
-		LIMIT 10
-		`, data.ItemDiamond)
+        SELECT user_id, amount
+        FROM inventory
+        WHERE item = ?
+        ORDER BY amount DESC
+        LIMIT 10
+        `, data.ItemDiamond)
 
 	if err != nil {
 		log.Printf("Query error in /leaderboard: %v", err)
@@ -383,6 +362,13 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	balance := database.TxGetUserBalance(tx, sender.ID)
 
+	if bet > 50000 {
+		content := fmt.Sprintf("Hey don't bet this much %v", data.EmojiCykodigo)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
 	if balance < bet {
 		respond(sess, inter, "You don't have enough money for this bet, go work", nil, false)
 		return
@@ -402,7 +388,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	}
 
 	if rand.IntN(100) < successChance {
-		winnings := bet * 3
+		winnings := int64(float64(bet) * 1.5)
 
 		if !txMoneyOp(sess, inter, tx, sender.ID, winnings, "+", data.CmdRoulette) {
 			return
@@ -443,36 +429,13 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	lastWork := int64(0)
-	err := tx.QueryRow(
-		`
-		SELECT last_work 
-		FROM cooldowns 
-		WHERE user_id = ?
-		`, sender.ID).Scan(&lastWork)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Failed to scan row in /work: %v", err)
-		respond(sess, inter, "Failed to check work cooldown", nil, false)
-
-		return
-	}
-
-	const cooldown = 10 * 60
-	currentTime := time.Now().Unix()
-
-	if currentTime-lastWork < cooldown {
-		remaining := cooldown - (currentTime - lastWork)
-		content := fmt.Sprintf("You need to wait **%vm %vs** before working again", remaining/60, remaining%60)
-
-		respond(sess, inter, content, nil, false)
-
+	if !checkCooldown(sess, inter, tx, sender.ID, "last_work", 10*60, data.CmdWork) {
 		return
 	}
 
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
-	// random number from range 100-400
-	money := rand.Int64N(300) + 100
+	// random number from range 100-300
+	money := rand.Int64N(200) + 100
 
 	if isHigh {
 		// apply 30% reduction if high
@@ -483,7 +446,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !txUpdateCd(sess, inter, tx, sender.ID, "last_work", currentTime, data.CmdWork) {
+	if !txUpdateCd(sess, inter, tx, sender.ID, "last_work", time.Now().Unix(), data.CmdWork) {
 		return
 	}
 
@@ -555,12 +518,6 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 }
 
 func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := database.GetDB(inter.GuildID)
-
-	if !ok {
-		return
-	}
-
 	sender, target, ok := getSenderAndTarget(sess, inter)
 
 	if !ok {
@@ -589,31 +546,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	lastStealFail := int64(0)
-	err := db.QueryRow(
-		`
-		SELECT last_steal_fail 
-		FROM cooldowns 
-		WHERE user_id = ?
-		`, sender.ID).Scan(&lastStealFail)
-
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Failed to scan row in /steal: %v", err)
-		respond(sess, inter, "Failed to check steal cooldown", nil, false)
-
-		return
-	}
-
-	const cooldown = 20 * 60
-	currentTime := time.Now().Unix()
-
-	if currentTime-lastStealFail < cooldown {
-		remaining := cooldown - (currentTime - lastStealFail)
-		content := fmt.Sprintf("You need to wait **%vm %vs** before stealing again after failure", remaining/60,
-			remaining%60)
-
-		respond(sess, inter, content, nil, false)
-
+	if !checkCooldown(sess, inter, tx, sender.ID, "last_steal_fail", 20*60, data.CmdSteal) {
 		return
 	}
 
@@ -651,7 +584,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		if !txUpdateCd(sess, inter, tx, sender.ID, "last_steal_fail", currentTime, data.CmdSteal) {
+		if !txUpdateCd(sess, inter, tx, sender.ID, "last_steal_fail", time.Now().Unix(), data.CmdSteal) {
 			return
 		}
 
@@ -715,22 +648,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	query := "INSERT INTO inventory (user_id, item) VALUES "
-	params := []any{}
-	placeholders := []string{}
-
-	for range amount {
-		placeholders = append(placeholders, "(?, ?)")
-		params = append(params, sender.ID, item)
-	}
-
-	query += strings.Join(placeholders, ", ")
-	_, err := tx.Exec(query, params...)
-
-	if err != nil {
-		log.Printf("Insert error in /buy: %v", err)
-		respond(sess, inter, "Failed to add items to inventory", nil, false)
-
+	if !updateInventory(sess, inter, tx, sender.ID, item, amount, data.CmdBuy) {
 		return
 	}
 
@@ -769,64 +687,15 @@ func handleGive(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	senderCount := int64(0)
-	err := tx.QueryRow(
-		`
-		SELECT COUNT(*) 
-		FROM inventory 
-		WHERE user_id = ? AND item = ?
-		`,
-		sender.ID, item).Scan(&senderCount)
-
-	if err != nil {
-		log.Printf("Count error in /give: %v", err)
-		respond(sess, inter, "Failed to check inventory", nil, false)
-
+	if !checkInventory(sess, inter, tx, sender.ID, item, amount, data.CmdGive) {
 		return
 	}
 
-	if senderCount < amount {
-		content := fmt.Sprintf("You only have **%v** %v, not enough to give **%v**", senderCount, item, amount)
-		respond(sess, inter, content, nil, false)
-
+	if !updateInventory(sess, inter, tx, sender.ID, item, -amount, data.CmdGive) {
 		return
 	}
 
-	_, err = tx.Exec(
-		`
-		DELETE FROM inventory 
-		WHERE rowid IN (
-			SELECT rowid 
-			FROM inventory 
-			WHERE user_id = ? AND item = ? 
-			LIMIT ?
-		)
-		`,
-		sender.ID, item, amount)
-
-	if err != nil {
-		log.Printf("Delete error in /give: %v", err)
-		respond(sess, inter, "Failed to remove items from inventory", nil, false)
-
-		return
-	}
-
-	query := "INSERT INTO inventory (user_id, item) VALUES "
-	params := []any{}
-	placeholders := []string{}
-
-	for range amount {
-		placeholders = append(placeholders, "(?, ?)")
-		params = append(params, target.ID, item)
-	}
-
-	query += strings.Join(placeholders, ", ")
-	_, err = tx.Exec(query, params...)
-
-	if err != nil {
-		log.Printf("Insert error in /give: %v", err)
-		respond(sess, inter, "Failed to add items to inventory", nil, false)
-
+	if !updateInventory(sess, inter, tx, target.ID, item, amount, data.CmdGive) {
 		return
 	}
 
@@ -868,45 +737,11 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	count := 0
-	err := tx.QueryRow(
-		`
-		SELECT COUNT(*) 
-		FROM inventory
-		WHERE user_id = ? AND item = ?
-		`,
-		sender.ID, item).Scan(&count)
-
-	if err != nil {
-		log.Printf("Count error in /eat: %v", err)
-		respond(sess, inter, "Failed to check inventory", nil, false)
-
+	if !checkInventory(sess, inter, tx, sender.ID, item, 1, data.CmdEat) {
 		return
 	}
 
-	if count == 0 {
-		content := fmt.Sprintf("You don't have **%v** in your inventory", item)
-		respond(sess, inter, content, nil, false)
-
-		return
-	}
-
-	_, err = tx.Exec(
-		`
-		DELETE FROM inventory 
-		WHERE rowid = (
-			SELECT rowid 
-			FROM inventory 
-			WHERE user_id = ? AND item = ? 
-			LIMIT 1
-		)
-		`,
-		sender.ID, item)
-
-	if err != nil {
-		log.Printf("Delete error in /eat: %v", err)
-		respond(sess, inter, "Failed to remove item from inventory", nil, false)
-
+	if !updateInventory(sess, inter, tx, sender.ID, item, -1, data.CmdEat) {
 		return
 	}
 
@@ -917,12 +752,12 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		currentTime := time.Now().Unix()
 		newEndTime := currentTime + effectDuration
 
-		_, err = tx.Exec(
+		_, err := tx.Exec(
 			`
 			INSERT INTO meth_effects(user_id, end_time)
 			VALUES(?, ?)
-			ON CONFLICT(user_id) DO UPDATE SET
-				end_time = MAX(?, end_time) + ?
+			ON CONFLICT(user_id) 
+			DO UPDATE SET end_time = GREATEST(?, end_time) + ?
 			`,
 			sender.ID, newEndTime, currentTime, effectDuration)
 

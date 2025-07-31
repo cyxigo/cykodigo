@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyxigo/cykodigo/bot/data"
@@ -173,6 +174,13 @@ func getItemAmountOption(sess *discordgo.Session, inter *discordgo.InteractionCr
 		return 0, false
 	}
 
+	if value > 1000 {
+		content := fmt.Sprintf("You can't %v more than **1000** items at a time", action)
+		respond(sess, inter, content, nil, false)
+
+		return 0, false
+	}
+
 	return value, true
 }
 
@@ -185,7 +193,7 @@ func handleActionOnCmd(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		return
 	}
 
-	content := fmt.Sprintf("%v **%v** %v", sender.Mention(), what, target.Mention())
+	content := fmt.Sprintf("%v **%v** %v %v", sender.Mention(), what, target.Mention(), data.EmojiCykodigo)
 	respond(sess, inter, content, nil, true)
 }
 
@@ -218,6 +226,104 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	}
 
 	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
+}
+
+// util function for checking cooldowns
+func checkCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, field string,
+	cooldown int64, cmd string) bool {
+	lastTime := int64(0)
+	err := tx.QueryRow(
+		`
+		SELECT `+field+` 
+		FROM cooldowns 
+		WHERE user_id = ?
+		`, userID).Scan(&lastTime)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Cooldown check error in /%s: %v", cmd, err)
+		respond(sess, inter, "Failed to check cooldown", nil, false)
+
+		return false
+	}
+
+	currentTime := time.Now().Unix()
+
+	if currentTime-lastTime < cooldown {
+		remaining := cooldown - (currentTime - lastTime)
+		content := fmt.Sprintf("You need to wait **%vm %vs**", remaining/60, remaining%60)
+
+		respond(sess, inter, content, nil, false)
+
+		return false
+	}
+
+	return true
+}
+
+// util function for checking if you have enough items in your inventory
+func checkInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
+	minAmount int64, cmd string) bool {
+	count := int64(0)
+	err := tx.QueryRow(
+		`
+		SELECT amount 
+		FROM inventory
+		WHERE user_id = ? AND item = ?
+		`,
+		userID, item).Scan(&count)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Inventory check error in /%v: %v", cmd, err)
+		respond(sess, inter, "Failed to check inventory", nil, false)
+
+		return false
+	}
+
+	if count < minAmount {
+		content := fmt.Sprintf("You don't have enough **%s**", item)
+		respond(sess, inter, content, nil, false)
+
+		return false
+	}
+
+	return true
+}
+
+// util function for operations on inventory items
+// deletes the item row if the number of items is zero
+func updateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
+	amount int64, cmd string) bool {
+	_, err := tx.Exec(
+		`
+		INSERT INTO inventory (user_id, item, amount) 
+		VALUES (?, ?, ?) 
+		ON CONFLICT(user_id, item) 
+		DO UPDATE SET amount = amount + ?
+		`,
+		userID, item, amount, amount)
+
+	if err != nil {
+		log.Printf("Insert error in /%v: %v", cmd, err)
+		respond(sess, inter, "Failed to update inventory", nil, false)
+
+		return false
+	}
+
+	_, err = tx.Exec(
+		`
+		DELETE FROM inventory 
+		WHERE user_id = ? AND item = ? AND amount <= 0
+		`,
+		userID, item)
+
+	if err != nil {
+		log.Printf("Delete error in /%v: %v", cmd, err)
+		respond(sess, inter, "Failed to update inventory", nil, false)
+
+		return false
+	}
+
+	return true
 }
 
 // util function for beginning sql transactions in interactions
@@ -266,8 +372,8 @@ func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx 
 		`
 		INSERT INTO cooldowns(user_id, `+field+`) 
 		VALUES(?, ?) 
-		ON CONFLICT(user_id) DO UPDATE SET 
-			`+field+` = ?
+		ON CONFLICT(user_id) 
+		DO UPDATE SET `+field+` = ?
 		`,
 		userID, value, value)
 
@@ -288,8 +394,8 @@ func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 		`
 		INSERT INTO balances(user_id, balance)
 		VALUES(?, ?)
-		ON CONFLICT(user_id) DO UPDATE SET 
-			balance = balance `+op+` ?
+		ON CONFLICT(user_id) 
+		DO UPDATE SET balance = balance `+op+` ?
 		`, userID, amount, amount)
 
 	if err != nil {

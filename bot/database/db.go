@@ -32,7 +32,9 @@ func initDB(db *sql.DB, name string) bool {
 		);
 		CREATE TABLE IF NOT EXISTS inventory (
 			user_id TEXT NOT NULL,
-			item TEXT NOT NULL
+			item TEXT NOT NULL,
+			amount INTEGER NOT NULL DEFAULT 1,
+			UNIQUE(user_id, item)
 		);
 		CREATE TABLE IF NOT EXISTS meth_effects (
 			user_id TEXT PRIMARY KEY,
