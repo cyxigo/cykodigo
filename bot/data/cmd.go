@@ -9,11 +9,12 @@ const (
 	CmdMeowat      = "meowat"
 	CmdBark        = "bark"
 	CmdBarkat      = "barkat"
-	CmdDoflip      = "doflip"
+	CmdFlip        = "flip"
 	CmdExplode     = "explode"
 	CmdSpin        = "spin"
 	CmdCat         = "cat"
 	CmdCart        = "cart"
+	CmdHate        = "hate"
 	CmdAssault     = "assault"
 	CmdBalance     = "balance"
 	CmdShop        = "shop"
@@ -24,6 +25,7 @@ const (
 	CmdTransfer    = "transfer"
 	CmdSteal       = "steal"
 	CmdBuy         = "buy"
+	CmdGive        = "give"
 	CmdEat         = "eat"
 	CmdHigh        = "high"
 
@@ -68,7 +70,8 @@ var Cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        CmdBarkat,
-		Description: "Bark at someone", Options: []*discordgo.ApplicationCommandOption{
+		Description: "Bark at someone",
+		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "member",
@@ -78,7 +81,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        CmdDoflip,
+		Name:        CmdFlip,
 		Description: "He will do a flip",
 	},
 	{
@@ -96,6 +99,18 @@ var Cmds = []*discordgo.ApplicationCommand{
 	{
 		Name:        CmdCart,
 		Description: "Cart!",
+	},
+	{
+		Name:        CmdHate,
+		Description: "Hate someone",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "member",
+				Description: "Person to hate",
+				Required:    true,
+			},
+		},
 	},
 	{
 		Name:        CmdAssault,
@@ -195,12 +210,43 @@ var Cmds = []*discordgo.ApplicationCommand{
 	},
 	{
 		Name:        CmdBuy,
-		Description: "Buy an item", Options: []*discordgo.ApplicationCommandOption{
+		Description: "Buy an item",
+		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "item",
 				Description: "Item to buy",
 				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "Amount of items to buy (optional)",
+				Required:    false,
+			},
+		},
+	},
+	{
+		Name:        CmdGive,
+		Description: "Give an item to someone",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "member",
+				Description: "Person to give item to",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "item",
+				Description: "Item to give",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "Amount of items to give (optional)",
+				Required:    false,
 			},
 		},
 	},

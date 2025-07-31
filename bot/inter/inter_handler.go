@@ -48,10 +48,6 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}, false)
 }
 
-func handleMeowat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	handleDoAtCmd(sess, inter, "meow")
-}
-
 func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	content := "I'm a cat, I can't bark you "
 	compliments := []string{
@@ -63,10 +59,6 @@ func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	content += compliments[rand.IntN(len(compliments))]
 	respond(sess, inter, content, nil, false)
-}
-
-func handleBarkAt(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	handleDoAtCmd(sess, inter, "bark")
 }
 
 func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -136,14 +128,16 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		sender.ID, item).Scan(&count)
 
 	if err != nil {
-		log.Printf("Failed to scan row in /assault: %v", err)
+		log.Printf("Count error in /assault: %v", err)
 		respond(sess, inter, "Failed to check inventory", nil, false)
 
 		return
 	}
 
 	if count == 0 {
-		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory", item), nil, false)
+		content := fmt.Sprintf("You don't have **%v** in your inventory", item)
+		respond(sess, inter, content, nil, false)
+
 		return
 	}
 
@@ -169,7 +163,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	case data.ItemNuke:
 		chance = 100
 		content = fmt.Sprintf("%v nuked %v and... ", sender.Mention(), target.Mention())
-		successMessage = "OBLITERATED THEM!!! BOOM!1!11!! 💥💥💥💥💥"
+		successMessage = "**OBLITERATED** THEM!!! BOOM!1!11!! 💥💥💥💥💥"
 	}
 
 	result := "failed! oops"
@@ -210,7 +204,7 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	content := fmt.Sprintf("%v's balance: **%v** money", target.Mention(), balance)
+	content := fmt.Sprintf("%v's balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
 	respond(sess, inter, content, nil, true)
 }
 
@@ -358,7 +352,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		return
 	}
 
-	content := "**Diamond Leaderboard**\n" +
+	content := fmt.Sprintf("**Diamond Leaderboard** %v\n", data.EmojiCykodigo) +
 		"-# Buy some with `/buy diamond`"
 	embed := data.EmbedText(strings.Join(leaderboard, "\n"))
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed}, false)
@@ -372,7 +366,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	}
 
 	options := inter.ApplicationCommandData().Options
-	bet := int(options[0].Value.(float64))
+	bet := options[0].IntValue()
 
 	if bet < 100 {
 		respond(sess, inter, "Minimum bet is 100 money", nil, false)
@@ -403,7 +397,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high**, chances of successful bet has increased %v\n", data.EmojiCatr)
+		content = fmt.Sprintf("You are **high** %v, chances of successful bet has increased\n", data.EmojiCatr)
 		successChance = 50
 	}
 
@@ -414,7 +408,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 			return
 		}
 
-		content += fmt.Sprintf("%v **JACKPOT!** You won **%v** money!", data.EmojiCykodigo, winnings)
+		content += fmt.Sprintf("**JACKPOT** You won **%v** money %v", winnings, data.EmojiCykodigo)
 	} else {
 		if isHigh {
 			content = fmt.Sprintf("You lost your bet of **%v** money. Better luck next time\n"+
@@ -478,11 +472,11 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
 	// random number from range 100-400
-	money := rand.IntN(300) + 100
+	money := rand.Int64N(300) + 100
 
 	if isHigh {
 		// apply 30% reduction if high
-		money = int(float64(money) * 0.7)
+		money = int64(float64(money) * 0.7)
 	}
 
 	if !txMoneyOp(sess, inter, tx, sender.ID, money, "+", data.CmdWork) {
@@ -500,11 +494,11 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	content := ""
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high** %v Actually, it's not good... Money from work has decreased\n",
+		content = fmt.Sprintf("You are **high** %v, actually, it's not good... Money from work has decreased\n",
 			data.EmojiCatr)
 	}
 
-	content += fmt.Sprintf("You worked and got **%v** money!", money)
+	content += fmt.Sprintf("You worked and got **%v** money %v", money, data.EmojiCykodigo)
 	respond(sess, inter, content, nil, false)
 }
 
@@ -521,7 +515,7 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	}
 
 	options := inter.ApplicationCommandData().Options
-	amount := (int)(options[1].Value.(float64))
+	amount := options[1].IntValue()
 
 	if amount <= 0 {
 		respond(sess, inter, "Transfer amount must be positive", nil, false)
@@ -555,7 +549,8 @@ func handleTransfer(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 		return
 	}
 
-	response := fmt.Sprintf("%v transferred %v money to %v", sender.Mention(), amount, target.Mention())
+	response := fmt.Sprintf("%v transferred %v money to %v %v", sender.Mention(), amount, target.Mention(),
+		data.EmojiCykodigo)
 	respond(sess, inter, response, nil, true)
 }
 
@@ -627,7 +622,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %v\n", data.EmojiCatr)
+		content = fmt.Sprintf("You are **high** %v, chances of successful steal has increased\n", data.EmojiCatr)
 		successChance = 80
 	}
 
@@ -636,7 +631,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 		// max() all stuff so we cant get 0 from stealing lol
 		// some of this may not be necessary but whatever
-		stealPercent := max(1, rand.IntN(51))
+		stealPercent := max(1, rand.Int64N(51))
 		stealAmount := max(1, (stealPercent*targetBalance)/100)
 
 		if !txMoneyOp(sess, inter, tx, target.ID, stealAmount, "-", data.CmdSteal) {
@@ -647,7 +642,8 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		content += fmt.Sprintf("You successfully stole **%v** money from %v!", stealAmount, target.Mention())
+		content += fmt.Sprintf("You successfully stole **%v** money from %v %v", stealAmount, target.Mention(),
+			data.EmojiCykodigo)
 	} else {
 		const penalty = 20
 
@@ -690,6 +686,14 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
+	amount, ok := getItemAmountOption(sess, inter, "buy", 1)
+
+	if !ok {
+		return
+	}
+
+	price *= amount
+
 	tx, ok := beginTx(sess, inter, data.CmdBuy)
 
 	if !ok {
@@ -701,7 +705,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	balance := database.TxGetUserBalance(tx, sender.ID)
 
 	if balance < price {
-		content := fmt.Sprintf("Too broke for **%v**, go work", item)
+		content := fmt.Sprintf("Too broke for **%v** (x%v), go work", item, amount)
 		respond(sess, inter, content, nil, false)
 
 		return
@@ -711,9 +715,21 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if _, err := tx.Exec("INSERT INTO inventory(user_id, item) VALUES(?, ?)", sender.ID, item); err != nil {
-		log.Printf("Insert error in /inventory: %v", err)
-		respond(sess, inter, "Failed to add item to inventory", nil, false)
+	query := "INSERT INTO inventory (user_id, item) VALUES "
+	params := []any{}
+	placeholders := []string{}
+
+	for range amount {
+		placeholders = append(placeholders, "(?, ?)")
+		params = append(params, sender.ID, item)
+	}
+
+	query += strings.Join(placeholders, ", ")
+	_, err := tx.Exec(query, params...)
+
+	if err != nil {
+		log.Printf("Insert error in /buy: %v", err)
+		respond(sess, inter, "Failed to add items to inventory", nil, false)
 
 		return
 	}
@@ -722,7 +738,106 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	respond(sess, inter, fmt.Sprintf("You bought **%v** for **%v** money", item, price), nil, false)
+	content := fmt.Sprintf("You bought **%v** (x%v) for **%v** money %v", item, amount, price, data.EmojiCykodigo)
+	respond(sess, inter, content, nil, false)
+}
+
+func handleGive(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	sender, target, ok := getSenderAndTarget(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	item, _, ok := getItemFromOption(sess, inter, 1)
+
+	if !ok {
+		return
+	}
+
+	amount, ok := getItemAmountOption(sess, inter, "give", 2)
+
+	if !ok {
+		return
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdGive)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	senderCount := int64(0)
+	err := tx.QueryRow(
+		`
+		SELECT COUNT(*) 
+		FROM inventory 
+		WHERE user_id = ? AND item = ?
+		`,
+		sender.ID, item).Scan(&senderCount)
+
+	if err != nil {
+		log.Printf("Count error in /give: %v", err)
+		respond(sess, inter, "Failed to check inventory", nil, false)
+
+		return
+	}
+
+	if senderCount < amount {
+		content := fmt.Sprintf("You only have **%v** %v, not enough to give **%v**", senderCount, item, amount)
+		respond(sess, inter, content, nil, false)
+
+		return
+	}
+
+	_, err = tx.Exec(
+		`
+		DELETE FROM inventory 
+		WHERE rowid IN (
+			SELECT rowid 
+			FROM inventory 
+			WHERE user_id = ? AND item = ? 
+			LIMIT ?
+		)
+		`,
+		sender.ID, item, amount)
+
+	if err != nil {
+		log.Printf("Delete error in /give: %v", err)
+		respond(sess, inter, "Failed to remove items from inventory", nil, false)
+
+		return
+	}
+
+	query := "INSERT INTO inventory (user_id, item) VALUES "
+	params := []any{}
+	placeholders := []string{}
+
+	for range amount {
+		placeholders = append(placeholders, "(?, ?)")
+		params = append(params, target.ID, item)
+	}
+
+	query += strings.Join(placeholders, ", ")
+	_, err = tx.Exec(query, params...)
+
+	if err != nil {
+		log.Printf("Insert error in /give: %v", err)
+		respond(sess, inter, "Failed to add items to inventory", nil, false)
+
+		return
+	}
+
+	if !commitTx(sess, inter, tx, data.CmdGive) {
+		return
+	}
+
+	content := fmt.Sprintf("%v gave **%v** (x%v) to %v %v", sender.Mention(), item, amount, target.Mention(),
+		data.EmojiCykodigo)
+
+	respond(sess, inter, content, nil, true)
 }
 
 func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -763,14 +878,16 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		sender.ID, item).Scan(&count)
 
 	if err != nil {
-		log.Printf("Failed to scan row in /eat: %v", err)
+		log.Printf("Count error in /eat: %v", err)
 		respond(sess, inter, "Failed to check inventory", nil, false)
 
 		return
 	}
 
 	if count == 0 {
-		respond(sess, inter, fmt.Sprintf("You don't have **%v** in your inventory", item), nil, false)
+		content := fmt.Sprintf("You don't have **%v** in your inventory", item)
+		respond(sess, inter, content, nil, false)
+
 		return
 	}
 
@@ -788,7 +905,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Delete error in /eat: %v", err)
-		respond(sess, inter, "Failed to get inventory", nil, false)
+		respond(sess, inter, "Failed to remove item from inventory", nil, false)
 
 		return
 	}
@@ -909,12 +1026,12 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	case data.CmdMeow:
 		respond(sess, inter, "Meow!", nil, false)
 	case data.CmdMeowat:
-		handleMeowat(sess, inter)
+		handleActionOnCmd(sess, inter, "meows at")
 	case data.CmdBark:
 		handleBark(sess, inter)
 	case data.CmdBarkat:
-		handleBarkAt(sess, inter)
-	case data.CmdDoflip:
+		handleActionOnCmd(sess, inter, "barks at")
+	case data.CmdFlip:
 		handleImageCmd(sess, inter, "Woah!", "res/flip.png")
 	case data.CmdExplode:
 		handleImageCmd(sess, inter, "WHAAAAAAAA-", "res/boom.png")
@@ -924,6 +1041,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleCat(sess, inter)
 	case data.CmdCart:
 		handleImageCmd(sess, inter, "Cart!", "res/cart.png")
+	case data.CmdHate:
+		handleActionOnCmd(sess, inter, "HATES")
 	case data.CmdAssault:
 		handleAssault(sess, inter)
 	case data.CmdBalance:
@@ -944,6 +1063,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleSteal(sess, inter)
 	case data.CmdBuy:
 		handleBuy(sess, inter)
+	case data.CmdGive:
+		handleGive(sess, inter)
 	case data.CmdEat:
 		handleEat(sess, inter)
 	case data.CmdHigh:

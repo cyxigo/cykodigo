@@ -140,7 +140,7 @@ func getOptionalTarget(sess *discordgo.Session, inter *discordgo.InteractionCrea
 // util function for getting an item from command option
 // returns item and its price
 func getItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, idx int) (
-	string, int, bool) {
+	string, int64, bool) {
 	item := strings.ToLower(inter.ApplicationCommandData().Options[idx].StringValue())
 	price, exists := data.ShopItems[item]
 
@@ -151,19 +151,39 @@ func getItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		return "", 0, false
 	}
 
-	return item, price, true
+	return item, int64(price), true
+}
+
+func getItemAmountOption(sess *discordgo.Session, inter *discordgo.InteractionCreate, action string, idx int) (
+	int64, bool) {
+	options := inter.ApplicationCommandData().Options
+
+	if len(options) <= idx {
+		return 1, true
+	}
+
+	value := options[idx].IntValue()
+
+	if value < 1 {
+		content := fmt.Sprintf("You can't %v less than **1** item", action)
+		respond(sess, inter, content, nil, false)
+
+		return 0, false
+	}
+
+	return value, true
 }
 
 // another util function for commands like
 // /meowat [member]
-func handleDoAtCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, what string) {
+func handleActionOnCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, what string) {
 	sender, target, ok := getSenderAndTarget(sess, inter)
 
 	if !ok {
 		return
 	}
 
-	content := fmt.Sprintf("%v %v at %v!", sender.Mention(), what, target.Mention())
+	content := fmt.Sprintf("%v **%v** %v", sender.Mention(), what, target.Mention())
 	respond(sess, inter, content, nil, true)
 }
 
@@ -186,7 +206,7 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 		Name:   imgName,
 		Reader: file,
 	}
-	description := fmt.Sprintf("**%v**", content)
+	description := fmt.Sprintf("**%v** %v", content, data.EmojiCykodigo)
 	embed := &discordgo.MessageEmbed{
 		Description: description,
 		Color:       data.DefaultEmbedColor,
@@ -261,7 +281,7 @@ func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx 
 
 // util function for money addition in interactions sql transactions
 func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
-	amount int, op string, cmd string) bool {
+	amount int64, op string, cmd string) bool {
 	_, err := tx.Exec(
 		`
 		INSERT INTO balances(user_id, balance)
