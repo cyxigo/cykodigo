@@ -757,7 +757,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			INSERT INTO meth_effects(user_id, end_time)
 			VALUES(?, ?)
 			ON CONFLICT(user_id) 
-			DO UPDATE SET end_time = GREATEST(?, end_time) + ?
+			DO UPDATE SET end_time = MAX(?, end_time) + ?
 			`,
 			sender.ID, newEndTime, currentTime, effectDuration)
 
