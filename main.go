@@ -5,7 +5,6 @@ import (
 	"github.com/cyxigo/cykodigo/bot/data"
 )
 
-// load .env stuff and init economy database
 func init() {
 	data.InitEnv()
 }
