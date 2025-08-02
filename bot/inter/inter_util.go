@@ -21,20 +21,10 @@ import (
 // also, i dont why but this file is really commented :p
 
 // util function to send interaction responses
-func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
-	files []*discordgo.File,
-	allowMentions bool) {
+func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string, files []*discordgo.File) {
 	data := &discordgo.InteractionResponseData{
 		Content: content,
 		Files:   files,
-	}
-
-	if allowMentions {
-		data.AllowedMentions = &discordgo.MessageAllowedMentions{
-			Parse: []discordgo.AllowedMentionType{
-				discordgo.AllowedMentionTypeUsers,
-			},
-		}
 	}
 
 	sess.InteractionRespond(inter.Interaction, &discordgo.InteractionResponse{
@@ -45,19 +35,11 @@ func respond(sess *discordgo.Session, inter *discordgo.InteractionCreate, conten
 
 // util function to send interaction responses with embeds
 func respondEmbed(sess *discordgo.Session, inter *discordgo.InteractionCreate, content string,
-	files []*discordgo.File, embeds []*discordgo.MessageEmbed, allowMentions bool) {
+	files []*discordgo.File, embeds []*discordgo.MessageEmbed) {
 	data := &discordgo.InteractionResponseData{
 		Content: content,
 		Files:   files,
 		Embeds:  embeds,
-	}
-
-	if allowMentions {
-		data.AllowedMentions = &discordgo.MessageAllowedMentions{
-			Parse: []discordgo.AllowedMentionType{
-				discordgo.AllowedMentionTypeUsers,
-			},
-		}
 	}
 
 	sess.InteractionRespond(inter.Interaction, &discordgo.InteractionResponse{
@@ -76,7 +58,7 @@ func getSender(sess *discordgo.Session, inter *discordgo.InteractionCreate) (*di
 
 	// how
 	if sender == nil {
-		respond(sess, inter, "Couldn't get interaction sender", nil, false)
+		respond(sess, inter, "Couldn't get interaction sender", nil)
 		return nil, false
 	}
 
@@ -103,7 +85,7 @@ func getTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate, requ
 	// i genuinely dont know how this can fail but anyways heres check
 	// if we somehow didnt find user
 	if required && target == nil {
-		respond(sess, inter, "Couldn't find target user", nil, false)
+		respond(sess, inter, "Couldn't find target user", nil)
 		return nil, false
 	}
 
@@ -147,7 +129,7 @@ func getItemFromOption(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	if !exists {
 		content := fmt.Sprintf("There's no item **%v**", item)
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return "", 0, false
 	}
@@ -169,14 +151,14 @@ func getItemAmountOption(sess *discordgo.Session, inter *discordgo.InteractionCr
 
 	if value < 1 {
 		content := fmt.Sprintf("You can't %v less than **1** item", action)
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return 0, false
 	}
 
 	if value > 1000 {
 		content := fmt.Sprintf("You can't %v more than **1000** items at a time", action)
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return 0, false
 	}
@@ -194,7 +176,7 @@ func handleActionOnCmd(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	}
 
 	content := fmt.Sprintf("%v **%v** %v %v", sender.Mention(), what, target.Mention(), data.EmojiCykodigo)
-	respond(sess, inter, content, nil, true)
+	respond(sess, inter, content, nil)
 }
 
 // util function for handling commands in interactions that send image
@@ -204,7 +186,7 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 
 	if err != nil {
 		log.Printf("Error opening '%v': %v", imgPath, err)
-		respond(sess, inter, "Couldn't open image", nil, false)
+		respond(sess, inter, "Couldn't open image", nil)
 
 		return
 	}
@@ -225,7 +207,7 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 		},
 	}
 
-	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed}, false)
+	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed})
 }
 
 // util function for checking cooldowns
@@ -241,7 +223,7 @@ func checkCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, 
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Cooldown check error in /%s: %v", cmd, err)
-		respond(sess, inter, "Failed to check cooldown", nil, false)
+		respond(sess, inter, "Failed to check cooldown", nil)
 
 		return false
 	}
@@ -252,7 +234,7 @@ func checkCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, 
 		remaining := cooldown - (currentTime - lastTime)
 		content := fmt.Sprintf("You need to wait **%vm %vs**", remaining/60, remaining%60)
 
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return false
 	}
@@ -274,14 +256,14 @@ func checkInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 
 	if err != nil && err != sql.ErrNoRows {
 		log.Printf("Inventory check error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to check inventory", nil, false)
+		respond(sess, inter, "Failed to check inventory", nil)
 
 		return false
 	}
 
 	if count < minAmount {
 		content := fmt.Sprintf("You don't have enough **%s**", item)
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return false
 	}
@@ -304,7 +286,7 @@ func updateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 	if err != nil {
 		log.Printf("Insert error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to update inventory", nil, false)
+		respond(sess, inter, "Failed to update inventory", nil)
 
 		return false
 	}
@@ -318,7 +300,7 @@ func updateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 	if err != nil {
 		log.Printf("Delete error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to update inventory", nil, false)
+		respond(sess, inter, "Failed to update inventory", nil)
 
 		return false
 	}
@@ -342,7 +324,7 @@ func beginTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, cmd st
 		log.Printf("Failed to begin transaction in /%v: %v", cmd, err)
 
 		content := fmt.Sprintf("Failed to start /%v", cmd)
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return nil, false
 	}
@@ -356,7 +338,7 @@ func commitTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *s
 		log.Printf("Commit error in /%v: %v", cmd, err)
 
 		content := fmt.Sprintf("Failed to finish /%v", cmd)
-		respond(sess, inter, content, nil, false)
+		respond(sess, inter, content, nil)
 
 		return false
 	}
@@ -379,7 +361,7 @@ func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx 
 
 	if err != nil {
 		log.Printf("Cooldown update error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to update cooldown", nil, false)
+		respond(sess, inter, "Failed to update cooldown", nil)
 
 		return false
 	}
@@ -400,7 +382,7 @@ func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 
 	if err != nil {
 		log.Printf("Addition error in /%v: %v", cmd, err)
-		respond(sess, inter, "Failed to add money", nil, false)
+		respond(sess, inter, "Failed to add money", nil)
 
 		return false
 	}
