@@ -7,8 +7,6 @@ import (
 )
 
 // util function for getting user balances in sql transactions
-// yes /balance doesnt use it
-// cus /balance doesnt need sql transactions since its just one query
 func TxGetUserBalance(tx *sql.Tx, userID string) int64 {
 	balance := int64(0)
 	err := tx.QueryRow(

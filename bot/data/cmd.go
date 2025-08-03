@@ -17,6 +17,7 @@ const (
 	CmdHate        = "hate"
 	CmdAssault     = "assault"
 	CmdBalance     = "balance"
+	CmdBalanceall  = "balanceall"
 	CmdShop        = "shop"
 	CmdInventory   = "inventory"
 	CmdLeaderboard = "leaderboard"
@@ -141,6 +142,10 @@ var Cmds = []*discordgo.ApplicationCommand{
 				Required:    false,
 			},
 		},
+	},
+	{
+		Name:        CmdBalanceall,
+		Description: "Check how much money each member of the server has",
 	},
 	{
 		Name:        CmdShop,

@@ -29,6 +29,8 @@ func WakeUp() {
 	sess.AddHandler(inter.InterHandler)
 	sess.AddHandler(MsgHandler)
 
+	sess.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMembers | discordgo.IntentsGuildMessages
+
 	err = sess.Open()
 
 	if err != nil {

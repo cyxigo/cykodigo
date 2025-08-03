@@ -1,7 +1,6 @@
 package inter
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"math/rand/v2"
@@ -49,7 +48,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	content := "I'm a cat, I can't bark you "
+	content := "I'm a **cat**, I can't **bark** you "
 	compliments := []string{
 		"idiot",
 		"dumbass",
@@ -66,7 +65,7 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Error reading res/cat: %v", err)
-		respond(sess, inter, "Couldn't find any cats", nil)
+		respond(sess, inter, "Couldn't find any **cats**", nil)
 
 		return
 	}
@@ -81,7 +80,7 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	if len(pngFiles) == 0 {
-		respond(sess, inter, "Couldn't find any cats", nil)
+		respond(sess, inter, "Couldn't find any **cats**", nil)
 		return
 	}
 
@@ -145,7 +144,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		successMessage = "**OBLITERATED** THEM!!! **BOOM!1!11!! 💥💥💥💥💥**"
 	}
 
-	result := "failed! oops"
+	result := "**failed**, oops"
 
 	if rand.IntN(99) < chance {
 		result = successMessage
@@ -156,11 +155,13 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 }
 
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := database.GetDB(inter.GuildID)
+	tx, ok := beginTx(sess, inter, data.CmdBalance)
 
 	if !ok {
 		return
 	}
+
+	defer tx.Rollback()
 
 	target, ok := getOptionalTarget(sess, inter)
 
@@ -168,23 +169,67 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	balance := 0
-	err := db.QueryRow(
-		`
-		SELECT balance 
-		FROM balances 
-		WHERE user_id = ?
-		`, target.ID).Scan(&balance)
+	balance := database.TxGetUserBalance(tx, target.ID)
+	content := fmt.Sprintf("**%v's** balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
 
-	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Failed to scan row in /balance: %v", err)
-		respond(sess, inter, "Failed to check balance", nil)
+	respond(sess, inter, content, nil)
+}
+
+func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	tx, ok := beginTx(sess, inter, data.CmdBalanceall)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	allMembers := []*discordgo.Member{}
+	after := ""
+
+	for {
+		members, err := sess.GuildMembers(inter.GuildID, after, 1000)
+
+		if err != nil {
+			log.Printf("Failed to get %v member list in /balanceall: %v", inter.GuildID, err)
+			respond(sess, inter, "Failed to get member list", nil)
+
+			return
+		}
+
+		if len(members) == 0 {
+			break
+		}
+
+		allMembers = append(allMembers, members...)
+		after = members[len(members)-1].User.ID
+	}
+
+	if len(allMembers) == 0 {
+		content := fmt.Sprintf("Everyone is **broke** %v", data.EmojiCykodigo)
+		respond(sess, inter, content, nil)
 
 		return
 	}
 
-	content := fmt.Sprintf("%v's balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
-	respond(sess, inter, content, nil)
+	builder := strings.Builder{}
+
+	for _, member := range allMembers {
+		balance := database.TxGetUserBalance(tx, member.User.ID)
+
+		if balance == 0 {
+			continue
+		}
+
+		entry := fmt.Sprintf("**%v** - **%v** money\n", member.DisplayName(), balance)
+		builder.WriteString(entry)
+	}
+
+	content := fmt.Sprintf("**Everyone's Balance** %v\n", data.EmojiCykodigo) +
+		"-# Members with **0** money aren't shown"
+	embed := data.EmbedText(builder.String())
+
+	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
 }
 
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -193,8 +238,8 @@ func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"-# Use `/buy [item]` to buy something"
 
 	for item, price := range data.ShopItems {
-		itemString := fmt.Sprintf("- %v: %v money\n", item, price)
-		builder.WriteString(itemString)
+		entry := fmt.Sprintf("- %v: %v money\n", item, price)
+		builder.WriteString(entry)
 	}
 
 	embed := data.EmbedText(builder.String())
@@ -230,7 +275,6 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 	defer rows.Close()
 
-	// int is amount of items user has, so its like
 	// item: count
 	items := make(map[string]int)
 
@@ -254,14 +298,15 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	}
 
 	builder := strings.Builder{}
-	content := fmt.Sprintf("%v inventory:\n", target.Mention())
 
 	for item, count := range items {
-		itemString := fmt.Sprintf("- %v ×%v\n", item, count)
-		builder.WriteString(itemString)
+		entry := fmt.Sprintf("- %v ×%v\n", item, count)
+		builder.WriteString(entry)
 	}
 
+	content := fmt.Sprintf("%v inventory:\n", target.Mention())
 	embed := data.EmbedText(builder.String())
+
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
 }
 
@@ -290,10 +335,14 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	defer rows.Close()
 
-	leaderboard := []string{}
-	position := 1
+	leaderboard := strings.Builder{}
+	position := -1 // -1 indicates if leaderboard is empty
 
 	for rows.Next() {
+		if position == -1 {
+			position = 1
+		}
+
 		userID := ""
 		count := 0
 
@@ -311,20 +360,14 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 			log.Printf("Failed to get display name for '%v' in /leaderboard: %v", userID, err)
 		}
 
-		entry := fmt.Sprintf(
-			"%v. **%v** - `%v` diamonds",
-			position,
-			displayName,
-			count,
-		)
-
-		leaderboard = append(leaderboard, entry)
+		entry := fmt.Sprintf("%v. **%v** - **%v** diamonds\n", position, displayName, count)
+		leaderboard.WriteString(entry)
 		position++
 	}
 
-	if len(leaderboard) == 0 {
+	if position == -1 {
 		content := "No one has diamonds yet\n" +
-			"Such an empty leaderboard\n" +
+			fmt.Sprintf("Such an **empty** leaderboard %v\n", data.EmojiCykodigo) +
 			"Buy some with `/buy diamond`"
 		respond(sess, inter, content, nil)
 
@@ -333,7 +376,8 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 
 	content := fmt.Sprintf("**Diamond Leaderboard** %v\n", data.EmojiCykodigo) +
 		"-# Buy some with `/buy diamond`"
-	embed := data.EmbedText(strings.Join(leaderboard, "\n"))
+	embed := data.EmbedText(leaderboard.String())
+
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
 }
 
@@ -540,7 +584,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	targetBalance := database.TxGetUserBalance(tx, target.ID)
 
 	if targetBalance <= 0 {
-		content := fmt.Sprintf("%v is **broke!** Nothing to steal", target.Mention())
+		content := fmt.Sprintf("%v is **broke**, nothing to steal", target.Mention())
 		respond(sess, inter, content, nil)
 
 		return
@@ -638,7 +682,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	balance := database.TxGetUserBalance(tx, sender.ID)
 
 	if balance < price {
-		content := fmt.Sprintf("Too broke for **%v** (x%v), go work", item, amount)
+		content := fmt.Sprintf("Too **broke** for **%v** (x%v), go work", item, amount)
 		respond(sess, inter, content, nil)
 
 		return
@@ -823,13 +867,15 @@ func handleHigh(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	db, ok := database.GetDB(inter.GuildID)
+	tx, ok := beginTx(sess, inter, data.CmdHigh)
 
 	if !ok {
 		return
 	}
 
-	isHigh, endTime := database.GetUserHighInfo(db, target.ID)
+	defer tx.Rollback()
+
+	isHigh, endTime := database.TxGetUserHighInfo(tx, target.ID)
 	currentTime := time.Now().Unix()
 	content := ""
 
@@ -882,6 +928,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleAssault(sess, inter)
 	case data.CmdBalance:
 		handleBalance(sess, inter)
+	case data.CmdBalanceall:
+		handleBalanceall(sess, inter)
 	case data.CmdShop:
 		handleShop(sess, inter)
 	case data.CmdInventory:
