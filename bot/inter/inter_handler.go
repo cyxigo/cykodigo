@@ -899,6 +899,16 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
+	// and yes we dont need to process dm or other weird stuff
+	// super duper explanation: we need guilds for EVERYTHING that uses database in one way or another
+	if inter.GuildID == "" {
+		content := fmt.Sprintf("Hey, you **can't** use me there %v", data.EmojiCykodigo)
+		respond(sess, inter, content, nil)
+
+		return
+	}
+
+	// and more than half of commands use database
 	switch inter.ApplicationCommandData().Name {
 	case data.CmdHelp:
 		handleHelp(sess, inter)
