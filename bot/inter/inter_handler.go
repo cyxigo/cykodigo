@@ -170,7 +170,7 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	}
 
 	balance := database.TxGetUserBalance(tx, target.ID)
-	content := fmt.Sprintf("**%v's** balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
+	content := fmt.Sprintf("%v's balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
 
 	respond(sess, inter, content, nil)
 }
