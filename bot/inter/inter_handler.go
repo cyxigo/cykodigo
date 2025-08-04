@@ -928,6 +928,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleImageCmd(sess, inter, "WHAAAAAAAA-", "res/boom.png")
 	case data.CmdSpin:
 		handleImageCmd(sess, inter, "Wooooooo", "res/gif/spin.gif")
+	case data.CmdDance:
+		handleImageCmd(sess, inter, "Wooooooo", "res/gif/dance.gif")
 	case data.CmdCat:
 		handleCat(sess, inter)
 	case data.CmdCart:

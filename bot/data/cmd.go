@@ -12,6 +12,7 @@ const (
 	CmdFlip        = "flip"
 	CmdExplode     = "explode"
 	CmdSpin        = "spin"
+	CmdDance       = "dance"
 	CmdCat         = "cat"
 	CmdCart        = "cart"
 	CmdHate        = "hate"
@@ -92,6 +93,10 @@ var Cmds = []*discordgo.ApplicationCommand{
 	{
 		Name:        CmdSpin,
 		Description: "He will spin! Wooooooo",
+	},
+	{
+		Name:        CmdDance,
+		Description: "Let's dance",
 	},
 	{
 		Name:        CmdCat,
