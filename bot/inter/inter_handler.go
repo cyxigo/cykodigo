@@ -48,7 +48,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	content := "I'm a **cat**, I can't **bark** you "
+	content := "I'm a cat*, I can't **bark** you "
 	compliments := []string{
 		"idiot",
 		"dumbass",
@@ -113,7 +113,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	tx, ok := beginTx(sess, inter, data.CmdAssault)
 
-	if !ok || !checkInventory(sess, inter, tx, sender.ID, item, 1, data.CmdAssault) {
+	if !ok || !txCheckInventory(sess, inter, tx, sender.ID, item, 1, data.CmdAssault) {
 		return
 	}
 
@@ -125,7 +125,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	chance := 0
 	content := ""
-	successMessage := "killed them!"
+	successMessage := "**killed** them!"
 
 	switch item {
 	case data.ItemKnife:
@@ -176,14 +176,6 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 }
 
 func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	tx, ok := beginTx(sess, inter, data.CmdBalanceall)
-
-	if !ok {
-		return
-	}
-
-	defer tx.Rollback()
-
 	allMembers := []*discordgo.Member{}
 	after := ""
 
@@ -212,10 +204,62 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 		return
 	}
 
+	userIDs := make([]string, len(allMembers))
+
+	for i, member := range allMembers {
+		userIDs[i] = member.User.ID
+	}
+
+	tx, ok := beginTx(sess, inter, data.CmdBalanceall)
+
+	if !ok {
+		return
+	}
+
+	defer tx.Rollback()
+
+	balances := make(map[string]int64)
+
+	query :=
+		`
+		SELECT user_id, balance
+		FROM balances
+		WHERE user_id IN (?` + strings.Repeat(",?", len(userIDs)-1) + `)
+		`
+
+	args := make([]any, len(userIDs))
+
+	for i, id := range userIDs {
+		args[i] = id
+	}
+
+	rows, err := tx.Query(query, args...)
+
+	if err != nil {
+		log.Printf("Query error in /balanceall: %v", err)
+		respond(sess, inter, "Failed to get balances", nil)
+
+		return
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		userID := ""
+		balance := int64(0)
+
+		if err := rows.Scan(&userID, &balance); err != nil {
+			log.Printf("Scan error in /balanceall: %v", err)
+			continue
+		}
+
+		balances[userID] = balance
+	}
+
 	builder := strings.Builder{}
 
 	for _, member := range allMembers {
-		balance := database.TxGetUserBalance(tx, member.User.ID)
+		balance := balances[member.User.ID]
 
 		if balance == 0 {
 			continue
@@ -404,6 +448,10 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	defer tx.Rollback()
 
+	if !txCheckCd(sess, inter, tx, sender.ID, "last_roulette_fail", 10*60, data.CmdRoulette) {
+		return
+	}
+
 	balance := database.TxGetUserBalance(tx, sender.ID)
 
 	if bet > 50000 {
@@ -432,7 +480,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	}
 
 	if rand.IntN(100) < successChance {
-		winnings := int64(float64(bet) * 1.5)
+		winnings := bet * 2
 
 		if !txMoneyOp(sess, inter, tx, sender.ID, winnings, "+", data.CmdRoulette) {
 			return
@@ -440,6 +488,10 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 		content += fmt.Sprintf("**JACKPOT** You won **%v** money %v", winnings, data.EmojiCykodigo)
 	} else {
+		if !txUpdateCd(sess, inter, tx, sender.ID, "last_roulette_fail", data.CmdRoulette) {
+			return
+		}
+
 		if isHigh {
 			content = fmt.Sprintf("You lost your bet of **%v** money. Better luck next time\n"+
 				"Even being **high** couldn't help you %v",
@@ -473,7 +525,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	if !checkCooldown(sess, inter, tx, sender.ID, "last_work", 10*60, data.CmdWork) {
+	if !txCheckCd(sess, inter, tx, sender.ID, "last_work", 10*60, data.CmdWork) {
 		return
 	}
 
@@ -490,7 +542,7 @@ func handleWork(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !txUpdateCd(sess, inter, tx, sender.ID, "last_work", time.Now().Unix(), data.CmdWork) {
+	if !txUpdateCd(sess, inter, tx, sender.ID, "last_work", data.CmdWork) {
 		return
 	}
 
@@ -590,7 +642,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !checkCooldown(sess, inter, tx, sender.ID, "last_steal_fail", 20*60, data.CmdSteal) {
+	if !txCheckCd(sess, inter, tx, sender.ID, "last_steal_fail", 20*60, data.CmdSteal) {
 		return
 	}
 
@@ -628,7 +680,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			return
 		}
 
-		if !txUpdateCd(sess, inter, tx, sender.ID, "last_steal_fail", time.Now().Unix(), data.CmdSteal) {
+		if !txUpdateCd(sess, inter, tx, sender.ID, "last_steal_fail", data.CmdSteal) {
 			return
 		}
 
@@ -692,7 +744,7 @@ func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !updateInventory(sess, inter, tx, sender.ID, item, amount, data.CmdBuy) {
+	if !txUpdateInventory(sess, inter, tx, sender.ID, item, amount, data.CmdBuy) {
 		return
 	}
 
@@ -731,15 +783,15 @@ func handleGive(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	if !checkInventory(sess, inter, tx, sender.ID, item, amount, data.CmdGive) {
+	if !txCheckInventory(sess, inter, tx, sender.ID, item, amount, data.CmdGive) {
 		return
 	}
 
-	if !updateInventory(sess, inter, tx, sender.ID, item, -amount, data.CmdGive) {
+	if !txUpdateInventory(sess, inter, tx, sender.ID, item, -amount, data.CmdGive) {
 		return
 	}
 
-	if !updateInventory(sess, inter, tx, target.ID, item, amount, data.CmdGive) {
+	if !txUpdateInventory(sess, inter, tx, target.ID, item, amount, data.CmdGive) {
 		return
 	}
 
@@ -781,11 +833,11 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	if !checkInventory(sess, inter, tx, sender.ID, item, 1, data.CmdEat) {
+	if !txCheckInventory(sess, inter, tx, sender.ID, item, 1, data.CmdEat) {
 		return
 	}
 
-	if !updateInventory(sess, inter, tx, sender.ID, item, -1, data.CmdEat) {
+	if !txUpdateInventory(sess, inter, tx, sender.ID, item, -1, data.CmdEat) {
 		return
 	}
 

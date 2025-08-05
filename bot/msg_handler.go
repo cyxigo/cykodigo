@@ -118,7 +118,7 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 				"and rats make me crazy.",
 		)
 	case strings.Contains(content, data.CmdMsgExplodeBalls):
-		sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
+		sess.ChannelMessageSend(msg.ChannelID, "**BOOM!1!11!! 💥💥💥💥💥**")
 	case strings.Contains(content, data.CmdMsgGlamptastic):
 		sess.ChannelMessageSend(msg.ChannelID, "glamptastic!")
 	case strings.Contains(content, data.CmdMsgNature):

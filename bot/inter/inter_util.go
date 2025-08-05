@@ -210,8 +210,8 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed})
 }
 
-// util function for checking cooldowns
-func checkCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, field string,
+// util function for checking cooldowns in sql transactions
+func txCheckCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, field string,
 	cooldown int64, cmd string) bool {
 	lastTime := int64(0)
 	err := tx.QueryRow(
@@ -242,8 +242,8 @@ func checkCooldown(sess *discordgo.Session, inter *discordgo.InteractionCreate, 
 	return true
 }
 
-// util function for checking if you have enough items in your inventory
-func checkInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
+// util function for checking if you have enough items in your inventory in sql transactions
+func txCheckInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
 	minAmount int64, cmd string) bool {
 	count := int64(0)
 	err := tx.QueryRow(
@@ -271,9 +271,9 @@ func checkInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	return true
 }
 
-// util function for operations on inventory items
+// util function for operations on inventory items in sql transactions
 // deletes the item row if the number of items is zero
-func updateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
+func txUpdateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
 	amount int64, cmd string) bool {
 	_, err := tx.Exec(
 		`
@@ -349,7 +349,8 @@ func commitTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *s
 // util function for updating cooldown in interactions sql transactions
 // e.g work cooldown
 func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
-	field string, value int64, cmd string) bool {
+	field string, cmd string) bool {
+	value := time.Now().Unix()
 	_, err := tx.Exec(
 		`
 		INSERT INTO cooldowns(user_id, `+field+`) 
