@@ -242,8 +242,6 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 		return
 	}
 
-	defer rows.Close()
-
 	for rows.Next() {
 		userID := ""
 		balance := int64(0)
@@ -255,6 +253,8 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 
 		balances[userID] = balance
 	}
+
+	rows.Close()
 
 	builder := strings.Builder{}
 
@@ -317,8 +317,6 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 		return
 	}
 
-	defer rows.Close()
-
 	// item: count
 	items := make(map[string]int)
 
@@ -333,6 +331,8 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 		items[item] = amount
 	}
+
+	rows.Close()
 
 	if len(items) == 0 {
 		content := fmt.Sprintf("%v inventory: oops! such an **empty** %v", target.Mention(), data.EmojiCatr)
@@ -377,8 +377,6 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		return
 	}
 
-	defer rows.Close()
-
 	leaderboard := strings.Builder{}
 	position := -1 // -1 indicates if leaderboard is empty
 
@@ -408,6 +406,8 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		leaderboard.WriteString(entry)
 		position++
 	}
+
+	rows.Close()
 
 	if position == -1 {
 		content := "No one has diamonds yet\n" +

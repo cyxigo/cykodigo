@@ -79,6 +79,8 @@ func GetDB(guildID string) (*sql.DB, bool) {
 		return nil, false
 	}
 
+	db.SetMaxOpenConns(1)
 	dbCache[guildID] = db
+
 	return db, true
 }
