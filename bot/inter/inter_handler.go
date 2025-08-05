@@ -48,7 +48,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	content := "I'm a cat*, I can't **bark** you "
+	content := "I'm a cat*, I can't bark you "
 	compliments := []string{
 		"idiot",
 		"dumbass",
@@ -65,7 +65,7 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if err != nil {
 		log.Printf("Error reading res/cat: %v", err)
-		respond(sess, inter, "Couldn't find any **cats**", nil)
+		respond(sess, inter, "Couldn't find any cats", nil)
 
 		return
 	}
@@ -80,7 +80,7 @@ func handleCat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	if len(pngFiles) == 0 {
-		respond(sess, inter, "Couldn't find any **cats**", nil)
+		respond(sess, inter, "Couldn't find any cats", nil)
 		return
 	}
 
@@ -125,7 +125,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	chance := 0
 	content := ""
-	successMessage := "**killed** them!"
+	successMessage := "killed them!"
 
 	switch item {
 	case data.ItemKnife:
@@ -137,14 +137,14 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	case data.ItemBomb:
 		chance = 90
 		content = fmt.Sprintf("%v threw a bomb at %v and... ", sender.Mention(), target.Mention())
-		successMessage = "**BOOM!1!11!! 💥💥💥💥💥**"
+		successMessage = "BOOM!1!11!! 💥💥💥💥💥"
 	case data.ItemNuke:
 		chance = 100
 		content = fmt.Sprintf("%v nuked %v and... ", sender.Mention(), target.Mention())
-		successMessage = "**OBLITERATED** THEM!!! **BOOM!1!11!! 💥💥💥💥💥**"
+		successMessage = "**OBLITERATED** THEM!!! BOOM!1!11!! 💥💥💥💥💥"
 	}
 
-	result := "**failed**, oops"
+	result := "failed, oops"
 
 	if rand.IntN(99) < chance {
 		result = successMessage
@@ -895,16 +895,16 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 			"You're now high for %vm %vs %v", item, duration/60, duration%60, data.EmojiCatr)
 		handleImageCmd(sess, inter, content, "res/gif/spin.gif")
 	} else {
-		message := "**Yummy!** " + data.EmojiCykodigo
+		message := "Yummy! " + data.EmojiCykodigo
 
 		switch item {
 		case data.ItemKnife:
 			message = "Oh wait why did you do that??? You're **dead** from several internal bleeds."
 		case data.ItemBomb:
 		case data.ItemNuke:
-			message = "**BOOM!1!11!!💥💥💥💥💥**"
+			message = "BOOM!1!11!!💥💥💥💥💥"
 		case data.ItemChalk:
-			message = "**Crunchy** dammit!"
+			message = "Crunchy dammit!"
 		}
 
 		content := fmt.Sprintf("You ate **%v**! %v", item, message)
@@ -954,7 +954,7 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	// and yes we dont need to process dm or other weird stuff
 	// super duper explanation: we need guilds for EVERYTHING that uses database in one way or another
 	if inter.GuildID == "" {
-		content := fmt.Sprintf("Hey, you **can't** use me there %v", data.EmojiCykodigo)
+		content := fmt.Sprintf("Hey, you can't use me there %v", data.EmojiCykodigo)
 		respond(sess, inter, content, nil)
 
 		return

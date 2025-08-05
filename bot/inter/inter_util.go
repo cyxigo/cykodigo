@@ -16,7 +16,7 @@ import (
 
 // quick note for myself cus i will forget 100%:
 // sender - person who used command
-// target - person who was specified in [member] option
+// target - person who was specified in [user] option
 //
 // also, i dont why but this file is really commented :p
 
@@ -65,8 +65,8 @@ func getSender(sess *discordgo.Session, inter *discordgo.InteractionCreate) (*di
 	return sender, true
 }
 
-// util function for getting interaction [member] in commands like
-// /meowat [member]
+// util function for getting interaction [user] in commands like
+// /meowat [user]
 func getTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate, required bool) (
 	*discordgo.User, bool) {
 	target := &discordgo.User{}
@@ -105,14 +105,14 @@ func getSenderAndTarget(sess *discordgo.Session, inter *discordgo.InteractionCre
 	return sender, target, ok
 }
 
-// util function for getting target user from commands with optional [member] option
-// like /balance [member] <-- optional
+// util function for getting target user from commands with optional [user] option
+// like /balance [user] <-- optional
 func getOptionalTarget(sess *discordgo.Session, inter *discordgo.InteractionCreate) (
 	*discordgo.User, bool) {
-	// check for [member] option
+	// check for [user] option
 	target, ok := getTarget(sess, inter, false)
 
-	// if theres no [member] specified just use sender instead
+	// if theres no [user] specified just use sender instead
 	if target == nil {
 		target, ok = getSender(sess, inter)
 	}
@@ -167,7 +167,7 @@ func getItemAmountOption(sess *discordgo.Session, inter *discordgo.InteractionCr
 }
 
 // another util function for commands like
-// /meowat [member]
+// /meowat [user]
 func handleActionOnCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate, what string) {
 	sender, target, ok := getSenderAndTarget(sess, inter)
 

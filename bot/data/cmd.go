@@ -37,7 +37,6 @@ const (
 	CmdMsgCrazy        = "crazy"
 	CmdMsgExplodeBalls = "cykodigo explode balls"
 	CmdMsgGlamptastic  = "glamptastic"
-	CmdMsgNature       = "nature"
 )
 
 // slash commands, looooooooooong list of them
@@ -60,7 +59,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to meow at",
 				Required:    true,
 			},
@@ -76,7 +75,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to bark at",
 				Required:    true,
 			},
@@ -112,7 +111,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to hate",
 				Required:    true,
 			},
@@ -124,7 +123,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to try to assault",
 				Required:    true,
 			},
@@ -142,7 +141,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person whose balance to show (optional)",
 				Required:    false,
 			},
@@ -162,7 +161,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person whose inventory to show (optional)",
 				Required:    false,
 			},
@@ -190,7 +189,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to whom to transfer",
 				Required:    true,
 			},
@@ -212,7 +211,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to steal money from",
 				Required:    true,
 			},
@@ -242,7 +241,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to give item to",
 				Required:    true,
 			},
@@ -278,7 +277,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
-				Name:        "member",
+				Name:        "user",
 				Description: "Person to check (optional)",
 				Required:    false,
 			},
