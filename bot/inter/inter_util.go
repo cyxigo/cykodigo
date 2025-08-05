@@ -198,9 +198,8 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 		Name:   imgName,
 		Reader: file,
 	}
-	description := fmt.Sprintf("**%v** %v", content, data.EmojiCykodigo)
 	embed := &discordgo.MessageEmbed{
-		Description: description,
+		Description: fmt.Sprintf("**%v** %v", content, data.EmojiCykodigo),
 		Color:       data.DefaultEmbedColor,
 		Image: &discordgo.MessageEmbedImage{
 			URL: "attachment://" + imgName,

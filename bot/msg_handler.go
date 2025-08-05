@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"os"
@@ -83,7 +84,7 @@ func handleMsgNature(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		Reader: file,
 	}
 	embed := &discordgo.MessageEmbed{
-		Description: "**RULES OF NATURE**",
+		Description: fmt.Sprintf("**RULES OF NATURE** %v", data.EmojiCykodigo),
 		Color:       data.DefaultEmbedColor,
 		Image: &discordgo.MessageEmbedImage{
 			URL: "attachment://" + imgName,

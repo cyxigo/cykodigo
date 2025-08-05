@@ -448,7 +448,7 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 
 	defer tx.Rollback()
 
-	if !txCheckCd(sess, inter, tx, sender.ID, "last_roulette_fail", 10*60, data.CmdRoulette) {
+	if !txCheckCd(sess, inter, tx, sender.ID, "last_roulette_fail", 5*60, data.CmdRoulette) {
 		return
 	}
 
@@ -471,12 +471,12 @@ func handleRoulette(sess *discordgo.Session, inter *discordgo.InteractionCreate)
 	}
 
 	content := ""
-	successChance := 30
+	successChance := 50
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
 
 	if isHigh {
 		content = fmt.Sprintf("You are **high** %v, chances of successful bet has increased\n", data.EmojiCatr)
-		successChance = 50
+		successChance = 70
 	}
 
 	if rand.IntN(100) < successChance {
