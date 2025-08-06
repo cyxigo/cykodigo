@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -256,21 +257,40 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 
 	rows.Close()
 
-	builder := strings.Builder{}
+	type entry struct {
+		name    string
+		balance int64
+	}
+
+	entryList := []entry{}
 
 	for _, member := range allMembers {
 		balance := balances[member.User.ID]
 
-		if balance == 0 {
+		if balance <= 0 {
 			continue
 		}
 
-		entry := fmt.Sprintf("**%v** - **%v** money\n", member.DisplayName(), balance)
+		entryList = append(entryList, entry{
+			name:    member.DisplayName(),
+			balance: balance,
+		})
+	}
+
+	sort.Slice(entryList, func(i, j int) bool {
+		return entryList[i].balance > entryList[j].balance
+	})
+
+	builder := strings.Builder{}
+
+	for i, member := range entryList {
+		entry := fmt.Sprintf("%v. **%v** - **%v** money\n", i, member.name, member.balance)
 		builder.WriteString(entry)
 	}
 
 	content := fmt.Sprintf("**Everyone's Balance** %v\n", data.EmojiCykodigo) +
-		"-# Members with **0** money aren't shown"
+		"-# Sorted by amount of money\n" +
+		"-# Members with less than or **0** money aren't shown"
 	embed := data.EmbedText(builder.String())
 
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
