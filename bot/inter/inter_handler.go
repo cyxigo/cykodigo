@@ -113,7 +113,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 
 	tx, ok := beginTx(sess, inter, data.CmdAssault)
 
-	if !ok || !txCheckInventory(sess, inter, tx, sender.ID, item, 1, data.CmdAssault) {
+	if !ok || !txCheckInventory(sess, inter, tx, sender.ID, item, 1, true, data.CmdAssault) {
 		return
 	}
 
@@ -642,25 +642,60 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if !txCheckCd(sess, inter, tx, sender.ID, "last_steal_fail", 20*60, data.CmdSteal) {
+	if !txCheckCd(sess, inter, tx, sender.ID, "last_steal_fail", 25*60, data.CmdSteal) {
 		return
 	}
 
 	content := ""
-	successChance := 50
 	isHigh, _ := database.TxGetUserHighInfo(tx, sender.ID)
+	successChance := 30
 
 	if isHigh {
 		content = fmt.Sprintf("You are **high** %v, chances of successful steal has increased\n", data.EmojiCatr)
-		successChance = 80
+		successChance = 60
+	}
+
+	minStealPercent := int64(1)
+	maxStealPercent := int64(50)
+	penalty := int64(20)
+	item := ""
+	hasItem := false
+
+	if txCheckInventory(sess, inter, tx, sender.ID, data.ItemKnife, 1, false, data.CmdSteal) {
+		item = data.ItemKnife
+		hasItem = true
+	}
+
+	if txCheckInventory(sess, inter, tx, sender.ID, data.ItemGun, 1, false, data.CmdSteal) {
+		item = data.ItemGun
+		hasItem = true
+	}
+
+	switch item {
+	case data.ItemKnife:
+		successChance += 10
+		minStealPercent = 10
+		maxStealPercent = 60
+		penalty = 40
+	case data.ItemGun:
+		successChance += 30
+		minStealPercent = 50
+		maxStealPercent = 80
+		penalty = 60
+	}
+
+	if hasItem {
+		content += fmt.Sprintf("You have **%v** in your inventory, chances of successful steal and "+
+			"money steal percent have increased %v\n", item, data.EmojiCatr)
 	}
 
 	if rand.IntN(100) < successChance {
 		targetBalance := database.TxGetUserBalance(tx, target.ID)
 
-		// max() all stuff so we cant get 0 from stealing lol
-		// some of this may not be necessary but whatever
-		stealPercent := max(1, rand.Int64N(51))
+		stealPercent := rand.Int64N(maxStealPercent-minStealPercent) + minStealPercent
+
+		// max() so we cant get 0 money from stealing lol
+		// this may not be necessary but whatever
 		stealAmount := max(1, (stealPercent*targetBalance)/100)
 
 		if !txMoneyOp(sess, inter, tx, target.ID, stealAmount, "-", data.CmdSteal) {
@@ -674,8 +709,6 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		content += fmt.Sprintf("You successfully stole **%v** money from %v %v", stealAmount, target.Mention(),
 			data.EmojiCykodigo)
 	} else {
-		const penalty = 20
-
 		if !txMoneyOp(sess, inter, tx, sender.ID, penalty, "-", data.CmdSteal) {
 			return
 		}
@@ -690,7 +723,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 				target.Mention(), penalty, data.EmojiCatr)
 		} else {
 			content = fmt.Sprintf("You failed to steal from %v and lost **%v** money\n"+
-				"**Pro tip:** being **high** increases chances of a successful steal %v",
+				"**Pro tip:** being **high** or having a **weapon** increases chances of a successful steal %v",
 				target.Mention(), penalty, data.EmojiCatr)
 		}
 	}
@@ -783,7 +816,7 @@ func handleGive(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	if !txCheckInventory(sess, inter, tx, sender.ID, item, amount, data.CmdGive) {
+	if !txCheckInventory(sess, inter, tx, sender.ID, item, amount, true, data.CmdGive) {
 		return
 	}
 
@@ -833,7 +866,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	defer tx.Rollback()
 
-	if !txCheckInventory(sess, inter, tx, sender.ID, item, 1, data.CmdEat) {
+	if !txCheckInventory(sess, inter, tx, sender.ID, item, 1, true, data.CmdEat) {
 		return
 	}
 
