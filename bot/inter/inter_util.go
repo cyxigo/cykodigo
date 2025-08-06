@@ -242,8 +242,9 @@ func txCheckCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 }
 
 // util function for checking if you have enough items in your inventory in sql transactions
+// "fatal" parameter means that this function should respond to an interaction with error if not enough items
 func txCheckInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
-	minAmount int64, cmd string) bool {
+	minAmount int64, fatal bool, cmd string) bool {
 	count := int64(0)
 	err := tx.QueryRow(
 		`
@@ -261,8 +262,10 @@ func txCheckInventory(sess *discordgo.Session, inter *discordgo.InteractionCreat
 	}
 
 	if count < minAmount {
-		content := fmt.Sprintf("You don't have enough **%s**", item)
-		respond(sess, inter, content, nil)
+		if fatal {
+			content := fmt.Sprintf("You don't have enough **%s**", item)
+			respond(sess, inter, content, nil)
+		}
 
 		return false
 	}
