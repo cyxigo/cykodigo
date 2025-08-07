@@ -1041,6 +1041,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleImageCmd(sess, inter, "Cart!", "res/cart.png")
 	case data.CmdHate:
 		handleActionOnCmd(sess, inter, "HATES")
+	case data.CmdLove:
+		handleActionOnCmd(sess, inter, "LOVES")
 	case data.CmdAssault:
 		handleAssault(sess, inter)
 	case data.CmdBalance:

@@ -16,6 +16,7 @@ const (
 	CmdCat         = "cat"
 	CmdCart        = "cart"
 	CmdHate        = "hate"
+	CmdLove        = "love"
 	CmdAssault     = "assault"
 	CmdBalance     = "balance"
 	CmdBalanceall  = "balanceall"
@@ -113,6 +114,18 @@ var Cmds = []*discordgo.ApplicationCommand{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "user",
 				Description: "Person to hate",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdLove,
+		Description: "Love someone",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "Person to love",
 				Required:    true,
 			},
 		},
