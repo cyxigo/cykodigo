@@ -198,13 +198,6 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 		after = members[len(members)-1].User.ID
 	}
 
-	if len(allMembers) == 0 {
-		content := fmt.Sprintf("Everyone is **broke** %v", data.EmojiCykodigo)
-		respond(sess, inter, content, nil)
-
-		return
-	}
-
 	userIDs := make([]string, len(allMembers))
 
 	for i, member := range allMembers {
@@ -275,6 +268,13 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 			name:    member.DisplayName(),
 			balance: balance,
 		})
+	}
+
+	if len(entryList) == 0 {
+		content := fmt.Sprintf("Everyone is **broke** %v", data.EmojiCykodigo)
+		respond(sess, inter, content, nil)
+
+		return
 	}
 
 	sort.Slice(entryList, func(i, j int) bool {
