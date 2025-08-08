@@ -209,6 +209,36 @@ func handleImageCmd(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	respondEmbed(sess, inter, "", []*discordgo.File{discordFile}, []*discordgo.MessageEmbed{embed})
 }
 
+// util function for getting all server members
+//
+// defined to increase readability in /balanceall handler
+func getAllMembers(sess *discordgo.Session, inter *discordgo.InteractionCreate) (
+	[]*discordgo.Member, bool) {
+	guildID := inter.GuildID
+	allMembers := []*discordgo.Member{}
+	after := ""
+
+	for {
+		members, err := sess.GuildMembers(guildID, after, 1000)
+
+		if err != nil {
+			log.Printf("Failed to get %v member list: %v", guildID, err)
+			respond(sess, inter, "Failed to get member list", nil)
+
+			return nil, false
+		}
+
+		if len(members) == 0 {
+			break
+		}
+
+		allMembers = append(allMembers, members...)
+		after = members[len(members)-1].User.ID
+	}
+
+	return allMembers, true
+}
+
 // util function for checking cooldowns in sql transactions
 func txCheckCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, field string,
 	cooldown int64, cmd string) bool {
@@ -273,7 +303,41 @@ func txCheckInventory(sess *discordgo.Session, inter *discordgo.InteractionCreat
 	return true
 }
 
+// util function for checking if you have enough items in your inventory
+//
+// "fatal" parameter means that this function should respond to an interaction with error if not enough items
+func checkInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, db *sql.DB, userID, item string,
+	minAmount int64, fatal bool, cmd string) bool {
+	count := int64(0)
+	err := db.QueryRow(
+		`
+		SELECT amount 
+		FROM inventory
+		WHERE user_id = ? AND item = ?
+		`,
+		userID, item).Scan(&count)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Inventory check error in /%v: %v", cmd, err)
+		respond(sess, inter, "Failed to check inventory", nil)
+
+		return false
+	}
+
+	if count < minAmount {
+		if fatal {
+			content := fmt.Sprintf("You don't have enough **%s**", item)
+			respond(sess, inter, content, nil)
+		}
+
+		return false
+	}
+
+	return true
+}
+
 // util function for operations on inventory items in sql transactions
+//
 // deletes the item row if the number of items is zero
 func txUpdateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
 	amount int64, cmd string) bool {
@@ -349,6 +413,7 @@ func commitTx(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *s
 }
 
 // util function for updating cooldown in interactions sql transactions
+//
 // e.g work cooldown
 func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
 	field string, cmd string) bool {
@@ -391,4 +456,50 @@ func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 	}
 
 	return true
+}
+
+// util function for updating high effect in sql transactions
+//
+// defined to increase readability in /eat handler
+//
+// returns updated end time on success
+func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string) (
+	int64, bool) {
+	const effectDuration = 5 * 60
+	currentTime := time.Now().Unix()
+	newEndTime := currentTime + effectDuration
+
+	_, err := tx.Exec(
+		`
+			INSERT INTO meth_effects(user_id, end_time)
+			VALUES(?, ?)
+			ON CONFLICT(user_id) 
+			DO UPDATE SET end_time = MAX(?, end_time) + ?
+			`,
+		userID, newEndTime, currentTime, effectDuration)
+
+	if err != nil {
+		log.Printf("Failed to update meth effect in /eat: %v", err)
+		respond(sess, inter, "Failed to get **high**", nil)
+
+		return 0, false
+	}
+
+	updatedEndTime := int64(0)
+	err = tx.QueryRow(
+		`
+			SELECT end_time 
+			FROM meth_effects 
+			WHERE user_id = ?
+			`,
+		userID).Scan(&updatedEndTime)
+
+	if err != nil {
+		log.Printf("Failed to get updated end time in /eat: %v", err)
+		respond(sess, inter, "Failed to get **high**", nil)
+
+		return 0, false
+	}
+
+	return updatedEndTime, true
 }

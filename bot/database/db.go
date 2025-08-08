@@ -13,6 +13,7 @@ import (
 var dbCache = make(map[string]*sql.DB)
 
 // databases file directory
+//
 // this is where all databases created using getDB() will be stored
 const dbDir = "database"
 
@@ -56,6 +57,7 @@ func initDB(db *sql.DB, name string) bool {
 }
 
 // returns the database for the guild with guildID
+//
 // creates a database if it doesn't exist
 func GetDB(guildID string) (*sql.DB, bool) {
 	if db, exists := dbCache[guildID]; exists {
@@ -79,7 +81,9 @@ func GetDB(guildID string) (*sql.DB, bool) {
 		return nil, false
 	}
 
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+
 	dbCache[guildID] = db
 
 	return db, true

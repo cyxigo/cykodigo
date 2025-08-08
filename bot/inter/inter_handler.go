@@ -112,13 +112,11 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	tx, ok := beginTx(sess, inter, data.CmdAssault)
+	db, ok := database.GetDB(inter.GuildID)
 
-	if !ok || !txCheckInventory(sess, inter, tx, sender.ID, item, 1, true, data.CmdAssault) {
+	if !ok || !checkInventory(sess, inter, db, sender.ID, item, 1, true, data.CmdAssault) {
 		return
 	}
-
-	defer tx.Rollback()
 
 	if !ok {
 		return
@@ -156,13 +154,11 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 }
 
 func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	tx, ok := beginTx(sess, inter, data.CmdBalance)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
 	}
-
-	defer tx.Rollback()
 
 	target, ok := getOptionalTarget(sess, inter)
 
@@ -170,64 +166,31 @@ func handleBalance(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		return
 	}
 
-	balance := database.TxGetUserBalance(tx, target.ID)
+	balance := database.GetUserBalance(db, target.ID)
 	content := fmt.Sprintf("%v's balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
 
 	respond(sess, inter, content, nil)
 }
 
 func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	allMembers := []*discordgo.Member{}
-	after := ""
-
-	for {
-		members, err := sess.GuildMembers(inter.GuildID, after, 1000)
-
-		if err != nil {
-			log.Printf("Failed to get %v member list in /balanceall: %v", inter.GuildID, err)
-			respond(sess, inter, "Failed to get member list", nil)
-
-			return
-		}
-
-		if len(members) == 0 {
-			break
-		}
-
-		allMembers = append(allMembers, members...)
-		after = members[len(members)-1].User.ID
-	}
-
-	userIDs := make([]string, len(allMembers))
-
-	for i, member := range allMembers {
-		userIDs[i] = member.User.ID
-	}
-
-	tx, ok := beginTx(sess, inter, data.CmdBalanceall)
+	allMembers, ok := getAllMembers(sess, inter)
 
 	if !ok {
 		return
 	}
 
-	defer tx.Rollback()
+	db, ok := database.GetDB(inter.GuildID)
 
-	balances := make(map[string]int64)
-
-	query :=
-		`
-		SELECT user_id, balance
-		FROM balances
-		WHERE user_id IN (?` + strings.Repeat(",?", len(userIDs)-1) + `)
-		`
-
-	args := make([]any, len(userIDs))
-
-	for i, id := range userIDs {
-		args[i] = id
+	if !ok {
+		return
 	}
 
-	rows, err := tx.Query(query, args...)
+	balances := make(map[string]int64)
+	rows, err := db.Query(
+		`
+		SELECT user_id, balance 
+		FROM balances
+		`)
 
 	if err != nil {
 		log.Printf("Query error in /balanceall: %v", err)
@@ -236,26 +199,26 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 		return
 	}
 
+	defer rows.Close()
+
 	for rows.Next() {
 		userID := ""
 		balance := int64(0)
 
 		if err := rows.Scan(&userID, &balance); err != nil {
-			log.Printf("Scan error in /balanceall: %v", err)
+			log.Printf("Failed to scan row in /balanceall: %v", err)
 			continue
 		}
 
 		balances[userID] = balance
 	}
 
-	rows.Close()
-
 	type entry struct {
 		name    string
 		balance int64
 	}
 
-	entryList := []entry{}
+	entries := []entry{}
 
 	for _, member := range allMembers {
 		balance := balances[member.User.ID]
@@ -264,33 +227,36 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 			continue
 		}
 
-		entryList = append(entryList, entry{
+		entries = append(entries, entry{
 			name:    member.DisplayName(),
 			balance: balance,
 		})
 	}
 
-	if len(entryList) == 0 {
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].balance > entries[j].balance
+	})
+
+	if len(entries) == 0 {
 		content := fmt.Sprintf("Everyone is **broke** %v", data.EmojiCykodigo)
 		respond(sess, inter, content, nil)
 
 		return
 	}
 
-	sort.Slice(entryList, func(i, j int) bool {
-		return entryList[i].balance > entryList[j].balance
-	})
+	if len(entries) > 100 {
+		entries = entries[:100]
+	}
 
 	builder := strings.Builder{}
 
-	for i, member := range entryList {
+	for i, member := range entries {
 		entry := fmt.Sprintf("%v. **%v** - **%v** money\n", i, member.name, member.balance)
 		builder.WriteString(entry)
 	}
 
 	content := fmt.Sprintf("**Everyone's Balance** %v\n", data.EmojiCykodigo) +
-		"-# Sorted by amount of money\n" +
-		"-# Members with less than or **0** money aren't shown"
+		"-# Showing top 100 members with money"
 	embed := data.EmbedText(builder.String())
 
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
@@ -311,13 +277,13 @@ func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	db, ok := database.GetDB(inter.GuildID)
+	target, ok := getOptionalTarget(sess, inter)
 
 	if !ok {
 		return
 	}
 
-	target, ok := getOptionalTarget(sess, inter)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
@@ -340,6 +306,8 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	// item: count
 	items := make(map[string]int)
 
+	defer rows.Close()
+
 	for rows.Next() {
 		item := ""
 		amount := 0
@@ -351,8 +319,6 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 
 		items[item] = amount
 	}
-
-	rows.Close()
 
 	if len(items) == 0 {
 		content := fmt.Sprintf("%v inventory: oops! such an **empty** %v", target.Mention(), data.EmojiCatr)
@@ -400,6 +366,8 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	leaderboard := strings.Builder{}
 	position := -1 // -1 indicates if leaderboard is empty
 
+	defer rows.Close()
+
 	for rows.Next() {
 		if position == -1 {
 			position = 1
@@ -426,8 +394,6 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 		leaderboard.WriteString(entry)
 		position++
 	}
-
-	rows.Close()
 
 	if position == -1 {
 		content := "No one has diamonds yet\n" +
@@ -895,48 +861,19 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	}
 
 	duration := int64(0)
+	currentTime := time.Now().Unix()
 
 	if item == data.ItemMeth {
-		const effectDuration = 5 * 60
-		currentTime := time.Now().Unix()
-		newEndTime := currentTime + effectDuration
+		updatedEndTime, ok := txUpdateHighEffect(sess, inter, tx, sender.ID)
 
-		_, err := tx.Exec(
-			`
-			INSERT INTO meth_effects(user_id, end_time)
-			VALUES(?, ?)
-			ON CONFLICT(user_id) 
-			DO UPDATE SET end_time = MAX(?, end_time) + ?
-			`,
-			sender.ID, newEndTime, currentTime, effectDuration)
-
-		if err != nil {
-			log.Printf("Failed to update meth effect in /eat: %v", err)
-			respond(sess, inter, "Failed to get **high**", nil)
-
-			return
-		}
-
-		updatedEndTime := int64(0)
-		err = tx.QueryRow(
-			`
-			SELECT end_time 
-			FROM meth_effects 
-			WHERE user_id = ?
-			`,
-			sender.ID).Scan(&updatedEndTime)
-
-		if err != nil {
-			log.Printf("Failed to get updated end time in /eat: %v", err)
-			respond(sess, inter, "Failed to get **high**", nil)
-
+		if !ok {
 			return
 		}
 
 		duration = updatedEndTime - currentTime
 	} else {
 		_, endTime := database.TxGetUserHighInfo(tx, sender.ID)
-		duration = endTime - time.Now().Unix()
+		duration = endTime - currentTime
 	}
 
 	if !commitTx(sess, inter, tx, data.CmdEat) {
@@ -972,15 +909,13 @@ func handleHigh(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	tx, ok := beginTx(sess, inter, data.CmdHigh)
+	db, ok := database.GetDB(inter.GuildID)
 
 	if !ok {
 		return
 	}
 
-	defer tx.Rollback()
-
-	isHigh, endTime := database.TxGetUserHighInfo(tx, target.ID)
+	isHigh, endTime := database.GetUserHighInfo(db, target.ID)
 	currentTime := time.Now().Unix()
 	content := ""
 
