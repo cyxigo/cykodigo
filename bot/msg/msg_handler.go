@@ -73,6 +73,7 @@ func handleMsgBotUsername(sess *discordgo.Session, msg *discordgo.MessageCreate)
 		"Grrrrrrrrrrrrrrrr",
 		"Let's dance, use `/dance`",
 		"You better go work, use `/work`",
+		"",
 	}
 
 	handleMsgReplyRandVariant(sess, msg, variants)
@@ -103,8 +104,13 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 
 	switch {
 	// CmdMsgExplodeBalls has 'cykodigo' in it, so check if we didnt get a conflict
-	case strings.Contains(content, sess.State.User.Username) && !strings.Contains(content, data.CmdMsgExplodeBalls):
-		handleMsgBotUsername(sess, msg)
+	case strings.Contains(content, sess.State.User.Username):
+		switch {
+		case strings.Contains(content, data.CmdMsgExplodeBalls):
+			sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
+		default:
+			handleMsgBotUsername(sess, msg)
+		}
 	case strings.Contains(content, data.CmdMsgMeow):
 		handleMsgMeow(sess, msg)
 	case strings.Contains(content, data.CmdMsgCrazy):
@@ -112,8 +118,6 @@ func MsgHandler(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 			"Crazy? I was crazy once. They locked me in a room, a rubber room, a rubber room with rats, "+
 				"and rats make me crazy.",
 		)
-	case strings.Contains(content, data.CmdMsgExplodeBalls):
-		sess.ChannelMessageSend(msg.ChannelID, "BOOM!1!11!! 💥💥💥💥💥")
 	case strings.Contains(content, data.CmdMsgGlamptastic):
 		sess.ChannelMessageSend(msg.ChannelID, "glamptastic!")
 	}
