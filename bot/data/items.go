@@ -17,7 +17,7 @@ const (
 	ItemGun         = "gun"
 	ItemBomb        = "bomb"
 	ItemNuke        = "nuke"
-	ItemDevilsKnife = "devilsknife"
+	ItemDevilsKnife = "devils knife"
 
 	ItemDiamond = "diamond"
 )

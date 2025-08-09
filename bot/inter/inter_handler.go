@@ -12,6 +12,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyxigo/cykodigo/bot/data"
 	"github.com/cyxigo/cykodigo/bot/database"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
@@ -144,7 +146,7 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	case data.ItemDevilsKnife:
 		chance = 100
 		content = fmt.Sprintf("%v ATTACKS %v WITH **CHAOS**, **CHAOS** AND ", sender.Mention(), target.Mention())
-		successMessage = " KILLS THEM! UEE HEE HEE"
+		successMessage = "KILLS THEM! UEE HEE HEE"
 	}
 
 	result := "failed, oops"
@@ -273,7 +275,9 @@ func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		"-# Use `/buy [item]` to buy something"
 
 	for item, price := range data.ShopItems {
-		entry := fmt.Sprintf("- %v: %v money\n", item, price)
+		caser := cases.Title(language.AmericanEnglish)
+		entry := fmt.Sprintf("- %v: %v money\n", caser.String(item), price)
+
 		builder.WriteString(entry)
 	}
 
