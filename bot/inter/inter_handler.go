@@ -51,7 +51,7 @@ func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 }
 
 func handleBark(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	content := "I'm a cat*, I can't bark you "
+	content := "I'm a cat, I can't bark you "
 	compliments := []string{
 		"idiot",
 		"dumbass",
