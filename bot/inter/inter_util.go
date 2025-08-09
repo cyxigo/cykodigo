@@ -463,11 +463,10 @@ func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 // defined to increase readability in /eat handler
 //
 // returns updated end time on success
-func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string) (
-	int64, bool) {
-	const effectDuration = 5 * 60
+func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
+	duration int64) (int64, bool) {
 	currentTime := time.Now().Unix()
-	newEndTime := currentTime + effectDuration
+	newEndTime := currentTime + duration
 
 	_, err := tx.Exec(
 		`
@@ -476,7 +475,7 @@ func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCre
 			ON CONFLICT(user_id) 
 			DO UPDATE SET end_time = MAX(?, end_time) + ?
 			`,
-		userID, newEndTime, currentTime, effectDuration)
+		userID, newEndTime, currentTime, duration)
 
 	if err != nil {
 		log.Printf("Failed to update meth effect in /eat: %v", err)

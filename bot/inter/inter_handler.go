@@ -141,6 +141,10 @@ func handleAssault(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 		chance = 100
 		content = fmt.Sprintf("%v nuked %v and... ", sender.Mention(), target.Mention())
 		successMessage = "**OBLITERATED** THEM!!! BOOM!1!11!! 💥💥💥💥💥"
+	case data.ItemDevilsKnife:
+		chance = 100
+		content = fmt.Sprintf("%v ATTACKS %v WITH **CHAOS**, **CHAOS** AND ", sender.Mention(), target.Mention())
+		successMessage = " KILLS THEM! UEE HEE HEE"
 	}
 
 	result := "failed, oops"
@@ -865,8 +869,10 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	duration := int64(0)
 	currentTime := time.Now().Unix()
 
-	if item == data.ItemMeth {
-		updatedEndTime, ok := txUpdateHighEffect(sess, inter, tx, sender.ID)
+	highDuration, isDrug := data.IsDrug(item)
+
+	if isDrug {
+		updatedEndTime, ok := txUpdateHighEffect(sess, inter, tx, sender.ID, highDuration)
 
 		if !ok {
 			return
@@ -882,7 +888,7 @@ func handleEat(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		return
 	}
 
-	if item == data.ItemMeth {
+	if _, isDrug := data.IsDrug(item); isDrug {
 		content := fmt.Sprintf("You ate %v! Wowowowowowowowowowo the world is spinning wowowowowowo...\n\n"+
 			"You're now high for %vm %vs %v", item, duration/60, duration%60, data.EmojiCatr)
 		handleImageCmd(sess, inter, content, "res/gif/spin.gif")
