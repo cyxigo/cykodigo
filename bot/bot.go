@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/cyxigo/cykodigo/bot/data"
 	"github.com/cyxigo/cykodigo/bot/inter"
+	"github.com/cyxigo/cykodigo/bot/msg"
 )
 
 // wake up cykodigo!
@@ -27,7 +28,7 @@ func WakeUp() {
 	sess.StateEnabled = true
 
 	sess.AddHandler(inter.InterHandler)
-	sess.AddHandler(MsgHandler)
+	sess.AddHandler(msg.MsgHandler)
 
 	sess.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMembers | discordgo.IntentsGuildMessages
 

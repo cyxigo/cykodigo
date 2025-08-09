@@ -1,7 +1,6 @@
-package bot
+package msg
 
 import (
-	"math/rand/v2"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -39,10 +38,44 @@ func handleMsgBotUsername(sess *discordgo.Session, msg *discordgo.MessageCreate)
 		"O.O",
 		"Never gonna give you up, never gonna let you down\nNever gonna run around and desert you\n" +
 			"Never gonna make you cry, never gonna say goodbye\nNever gonna tell a lie and hurt you",
+		"Look, whatever you selling, I'm not buying yo.",
+		"WHY BE THE [[Little Sponge]] WHO HATES ITS [[$4.99]] LIFE\n" +
+			"WHEN YOU CAN BE A\n" +
+			"[[BIG SHOT!!!]]\n" +
+			"[[BIG SHOT!!!!]]\n" +
+			"[[BIG SHOT!!!!!]]\n" +
+			"THAT'S RIGHT!! NOW'S YOUR CHANCE TO BE A [[BIG SHOT]]!!",
+		"[[Hyperlink Blocked]]",
+		"I'm a [[BIG SHOT]]!",
+		"I'LL SHOW YOU WHAT IT MEANS TO BE FREE!",
+		"I CAN DO ANYTHING!",
+		"CHAOS, CHAOS!",
+		"DO YOU WANT TO PLAY GAME, GAME?",
+		"UEE HEE HEE",
+		"I'm old!",
+		"Freedom...",
+		"True",
+		"False",
+		"Wow",
+		"Um",
+		"Uh",
+		"Umm",
+		"Uhh",
+		"Yo",
+		"Yes?",
+		"Hm",
+		"Hmm",
+		"Hmmmmm",
+		"Hmmmmmmmmmmmmmmmmmmmmmmm",
+		"Hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
+		"Hm?",
+		"Shhhhhhhhhhhhhhhh",
+		"Grrrrrrrrrrrrrrrr",
+		"Let's dance, use `/dance`",
+		"You better go work, use `/work`",
 	}
 
-	sess.MessageReactionAdd(msg.ChannelID, msg.ID, data.EmojiReactCykodigo)
-	sess.ChannelMessageSend(msg.ChannelID, variants[rand.IntN(len(variants))])
+	handleMsgReplyRandVariant(sess, msg, variants)
 }
 
 func handleMsgMeow(sess *discordgo.Session, msg *discordgo.MessageCreate) {
@@ -56,7 +89,7 @@ func handleMsgMeow(sess *discordgo.Session, msg *discordgo.MessageCreate) {
 		"jrimbayum",
 	}
 
-	sess.ChannelMessageSend(msg.ChannelID, variants[rand.IntN(len(variants))])
+	handleMsgReplyRandVariant(sess, msg, variants)
 }
 
 // handler for messages content

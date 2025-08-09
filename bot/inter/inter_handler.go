@@ -16,7 +16,7 @@ import (
 
 func handleHelp(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	features := "**Features**\n" +
-		"This bot isn't so serious. But he has money system!\n" +
+		"This bot isn't so serious and silly. But he has money system!\n" +
 		"You can work using `/work` command, buy stuff using `/buy`, check your balance using `/balance` " +
 		"and check stuff that you bought using `/inventory`\n" +
 		"You can also steal money from people using `/steal` and transfer money using `/transfer`"
@@ -256,7 +256,8 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 	}
 
 	content := fmt.Sprintf("**Everyone's Balance** %v\n", data.EmojiCykodigo) +
-		"-# Showing top 100 members with money"
+		"-# Showing top 100 members with money\n" +
+		"-# Use `/work` to get money"
 	embed := data.EmbedText(builder.String())
 
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
@@ -405,6 +406,7 @@ func handleLeaderboard(sess *discordgo.Session, inter *discordgo.InteractionCrea
 	}
 
 	content := fmt.Sprintf("**Diamond Leaderboard** %v\n", data.EmojiCykodigo) +
+		"-# Showing top 10 members with diamonds\n" +
 		"-# Buy some with `/buy diamond`"
 	embed := data.EmbedText(leaderboard.String())
 
