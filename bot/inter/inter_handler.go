@@ -695,7 +695,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 
 	if hasItem {
 		content += fmt.Sprintf("You have **%v** in your inventory, chances of successful steal and "+
-			"money steal percent have increased %v\n", item, data.EmojiCatr)
+			"money steal percent have increased %v\n", data.Title(item), data.EmojiCatr)
 	}
 
 	if rand.IntN(100) < successChance {
