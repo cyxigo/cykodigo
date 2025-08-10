@@ -2,6 +2,9 @@ package data
 
 import (
 	"slices"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -92,4 +95,11 @@ func IsDrug(item string) (int64, bool) {
 
 func IsWeapon(item string) bool {
 	return slices.Contains(WeaponItems, item)
+}
+
+// returns item name with first letters of it capitalized
+// devils knife -> Devils Knife
+func Title(item string) string {
+	caser := cases.Title(language.AmericanEnglish)
+	return caser.String(item)
 }

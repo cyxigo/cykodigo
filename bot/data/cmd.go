@@ -28,8 +28,10 @@ const (
 	CmdTransfer    = "transfer"
 	CmdSteal       = "steal"
 	CmdBuy         = "buy"
+	CmdSell        = "sell"
 	CmdGive        = "give"
 	CmdEat         = "eat"
+	CmdCooldown    = "cooldown"
 	CmdHigh        = "high"
 
 	// msg means that this is message content command
@@ -249,6 +251,24 @@ var Cmds = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:        CmdSell,
+		Description: "Sell an item",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "item",
+				Description: "Item to sell",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "Amount of items to sell (optional)",
+				Required:    false,
+			},
+		},
+	},
+	{
 		Name:        CmdGive,
 		Description: "Give an item to someone",
 		Options: []*discordgo.ApplicationCommandOption{
@@ -281,6 +301,18 @@ var Cmds = []*discordgo.ApplicationCommand{
 				Name:        "item",
 				Description: "Item to eat",
 				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdCooldown,
+		Description: "Check your cooldowns",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "Person to check (optional)",
+				Required:    false,
 			},
 		},
 	},

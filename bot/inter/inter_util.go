@@ -239,6 +239,12 @@ func getAllMembers(sess *discordgo.Session, inter *discordgo.InteractionCreate) 
 	return allMembers, true
 }
 
+const (
+	workCooldown     = 10 * 60
+	stealCooldown    = 15 * 60
+	rouletteCooldown = 5 * 60
+)
+
 // util function for checking cooldowns in sql transactions
 func txCheckCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, field string,
 	cooldown int64, cmd string) bool {
@@ -336,10 +342,12 @@ func checkInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate,
 	return true
 }
 
-// util function for operations on inventory items in sql transactions
+// util function for adding item to the user inventory in sql transactions
+//
+// remove items via negative amount
 //
 // deletes the item row if the number of items is zero
-func txUpdateInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
+func txAddItem(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID, item string,
 	amount int64, cmd string) bool {
 	_, err := tx.Exec(
 		`
@@ -438,14 +446,16 @@ func txUpdateCd(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx 
 }
 
 // util function for money addition in interactions sql transactions
-func txMoneyOp(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string,
-	amount int64, op string, cmd string) bool {
+//
+// remove money via negative amount
+func txAddMoney(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *sql.Tx, userID string, amount int64,
+	cmd string) bool {
 	_, err := tx.Exec(
 		`
 		INSERT INTO balances(user_id, balance)
 		VALUES(?, ?)
 		ON CONFLICT(user_id) 
-		DO UPDATE SET balance = balance `+op+` ?
+		DO UPDATE SET balance = balance + ?
 		`, userID, amount, amount)
 
 	if err != nil {
