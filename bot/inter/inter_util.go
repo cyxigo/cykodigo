@@ -470,10 +470,10 @@ func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCre
 
 	_, err := tx.Exec(
 		`
-			INSERT INTO effects(user_id, end_time)
+			INSERT INTO effects(user_id, high_end_time)
 			VALUES(?, ?)
 			ON CONFLICT(user_id) 
-			DO UPDATE SET high_end_time = MAX(?, end_time) + ?
+			DO UPDATE SET high_end_time = MAX(?, high_end_time) + ?
 			`,
 		userID, newEndTime, currentTime, duration)
 
