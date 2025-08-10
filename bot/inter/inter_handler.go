@@ -339,7 +339,8 @@ func handleInventory(sess *discordgo.Session, inter *discordgo.InteractionCreate
 	builder := strings.Builder{}
 
 	for item, count := range items {
-		entry := fmt.Sprintf("- %v ×%v\n", item, count)
+		caser := cases.Title(language.AmericanEnglish)
+		entry := fmt.Sprintf("- %v ×%v\n", caser.String(item), count)
 		builder.WriteString(entry)
 	}
 

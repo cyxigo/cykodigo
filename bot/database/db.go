@@ -37,15 +37,15 @@ func initDB(db *sql.DB, name string) bool {
 			amount INTEGER NOT NULL DEFAULT 1,
 			UNIQUE("user_id", "item")
 		);
-		CREATE TABLE IF NOT EXISTS meth_effects (
+		CREATE TABLE IF NOT EXISTS effects (
 			user_id TEXT PRIMARY KEY,
-			end_time INTEGER NOT NULL DEFAULT 0
+			high_end_time INTEGER NOT NULL DEFAULT 0
 		);
 		
 		CREATE INDEX IF NOT EXISTS idx_balances_user ON balances(user_id);
 		CREATE INDEX IF NOT EXISTS idx_cooldowns_user ON cooldowns(user_id);
 		CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory(user_id);
-		CREATE INDEX IF NOT EXISTS idx_meth_effects_user ON meth_effects(user_id);
+		CREATE INDEX IF NOT EXISTS idx_effects_user ON effects(user_id);
 		`)
 
 	if err != nil {

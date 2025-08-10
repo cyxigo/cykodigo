@@ -23,15 +23,15 @@ func GetUserBalance(db *sql.DB, userID string) int64 {
 	return balance
 }
 
-// util function to get info about a users meth effect status
+// util function to get info about a users high effect
 //
 // returns whether the user is currently high and the effect end time
 func GetUserHighInfo(db *sql.DB, userID string) (bool, int64) {
 	endTime := int64(0)
 	err := db.QueryRow(
 		`
-		SELECT end_time 
-		FROM meth_effects 
+		SELECT high_end_time 
+		FROM effects 
 		WHERE user_id = ?
 		`, userID).Scan(&endTime)
 

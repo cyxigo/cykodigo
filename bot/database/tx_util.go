@@ -23,14 +23,14 @@ func TxGetUserBalance(tx *sql.Tx, userID string) int64 {
 	return balance
 }
 
-// util function to get info about a users meth effect status in sql transactions
+// util function to get info about a user meth effect status in sql transactions
 // returns whether the user is currently high and the effect end time
 func TxGetUserHighInfo(tx *sql.Tx, userID string) (bool, int64) {
 	endTime := int64(0)
 	err := tx.QueryRow(
 		`
-		SELECT end_time 
-		FROM meth_effects 
+		SELECT high_end_time 
+		FROM effects 
 		WHERE user_id = ?
 		`, userID).Scan(&endTime)
 

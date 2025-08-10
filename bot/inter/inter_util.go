@@ -470,10 +470,10 @@ func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCre
 
 	_, err := tx.Exec(
 		`
-			INSERT INTO meth_effects(user_id, end_time)
+			INSERT INTO effects(user_id, end_time)
 			VALUES(?, ?)
 			ON CONFLICT(user_id) 
-			DO UPDATE SET end_time = MAX(?, end_time) + ?
+			DO UPDATE SET high_end_time = MAX(?, end_time) + ?
 			`,
 		userID, newEndTime, currentTime, duration)
 
@@ -487,8 +487,8 @@ func txUpdateHighEffect(sess *discordgo.Session, inter *discordgo.InteractionCre
 	updatedEndTime := int64(0)
 	err = tx.QueryRow(
 		`
-			SELECT end_time 
-			FROM meth_effects 
+			SELECT high_end_time 
+			FROM effects 
 			WHERE user_id = ?
 			`,
 		userID).Scan(&updatedEndTime)
