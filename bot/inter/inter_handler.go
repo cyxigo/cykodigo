@@ -644,7 +644,7 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	successChance := 30
 
 	if isHigh {
-		content = fmt.Sprintf("You are **high** %v, chances of successful steal has increased\n", data.EmojiCatr)
+		content = fmt.Sprintf("You are **high**, chances of successful steal has increased %v\n", data.EmojiCatr)
 		successChance = 60
 	}
 
