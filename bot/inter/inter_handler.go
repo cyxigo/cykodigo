@@ -268,6 +268,10 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 	respondEmbed(sess, inter, content, nil, []*discordgo.MessageEmbed{embed})
 }
 
+func handleBank(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	respond(sess, inter, "Work in progress!!! "+data.EmojiCykodigo, nil)
+}
+
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	builder := strings.Builder{}
 	content := fmt.Sprintf("**Shop %v**\n", data.EmojiCykodigo) +
@@ -756,6 +760,14 @@ func handleSteal(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	respond(sess, inter, content, nil)
 }
 
+func handleDeposit(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	respond(sess, inter, "Work in progress!!! "+data.EmojiCykodigo, nil)
+}
+
+func handleWithdraw(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
+	respond(sess, inter, "Work in progress!!! "+data.EmojiCykodigo, nil)
+}
+
 func handleBuy(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 	sender, ok := getSender(sess, inter)
 
@@ -1128,6 +1140,8 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleBalance(sess, inter)
 	case data.CmdBalanceall:
 		handleBalanceall(sess, inter)
+	case data.CmdBank:
+		handleBank(sess, inter)
 	case data.CmdShop:
 		handleShop(sess, inter)
 	case data.CmdInventory:
@@ -1142,6 +1156,10 @@ func InterHandler(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
 		handleTransfer(sess, inter)
 	case data.CmdSteal:
 		handleSteal(sess, inter)
+	case data.CmdDeposit:
+		handleDeposit(sess, inter)
+	case data.CmdWithdraw:
+		handleWithdraw(sess, inter)
 	case data.CmdBuy:
 		handleBuy(sess, inter)
 	case data.CmdSell:

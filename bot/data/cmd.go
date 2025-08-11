@@ -20,6 +20,7 @@ const (
 	CmdAssault     = "assault"
 	CmdBalance     = "balance"
 	CmdBalanceall  = "balanceall"
+	CmdBank        = "bank"
 	CmdShop        = "shop"
 	CmdInventory   = "inventory"
 	CmdLeaderboard = "leaderboard"
@@ -27,6 +28,8 @@ const (
 	CmdWork        = "work"
 	CmdTransfer    = "transfer"
 	CmdSteal       = "steal"
+	CmdDeposit     = "deposit"
+	CmdWithdraw    = "withdraw"
 	CmdBuy         = "buy"
 	CmdSell        = "sell"
 	CmdGive        = "give"
@@ -157,7 +160,7 @@ var Cmds = []*discordgo.ApplicationCommand{
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "user",
-				Description: "Person whose balance to show (optional)",
+				Description: "Person to check (optional)",
 				Required:    false,
 			},
 		},
@@ -165,6 +168,18 @@ var Cmds = []*discordgo.ApplicationCommand{
 	{
 		Name:        CmdBalanceall,
 		Description: "Check how much money each member of the server has",
+	},
+	{
+		Name:        CmdBank,
+		Description: "Check money in your bank account",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "Person to check (optional)",
+				Required:    false,
+			},
+		},
 	},
 	{
 		Name:        CmdShop,
@@ -228,6 +243,30 @@ var Cmds = []*discordgo.ApplicationCommand{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "user",
 				Description: "Person to steal money from",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdDeposit,
+		Description: "Deposit money into your bank account",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "Amount of money to deposit",
+				Required:    true,
+			},
+		},
+	},
+	{
+		Name:        CmdWithdraw,
+		Description: "Withdraw money from your bank account",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "Amount of money to withdraw",
 				Required:    true,
 			},
 		},

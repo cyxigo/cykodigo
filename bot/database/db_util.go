@@ -6,8 +6,25 @@ import (
 	"time"
 )
 
-// util function for getting user balances in sql transactions
+// util function for getting user balances
 func GetUserBalance(db *sql.DB, userID string) int64 {
+	balance := int64(0)
+	err := db.QueryRow(
+		`
+		SELECT balance
+		FROM balances 
+		WHERE user_id = ?
+		`, userID).Scan(&balance)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("Query error in getUserBalance: %v", err)
+	}
+
+	return balance
+}
+
+// util function for getting user balances (in bank)
+func GetUserBankBalance(db *sql.DB, userID string) int64 {
 	balance := int64(0)
 	err := db.QueryRow(
 		`

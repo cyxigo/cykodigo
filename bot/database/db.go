@@ -23,13 +23,15 @@ func initDB(db *sql.DB, name string) bool {
 		`
 		CREATE TABLE IF NOT EXISTS balances (
 			user_id TEXT PRIMARY KEY,
-			balance INTEGER NOT NULL DEFAULT 0
+			balance INTEGER NOT NULL DEFAULT 0,
+			bank INTEGER NOT NULL DEFAULT 0,
 		);
 		CREATE TABLE IF NOT EXISTS cooldowns (
 			user_id TEXT PRIMARY KEY,
 			last_work INTEGER NOT NULL DEFAULT 0,
 			last_steal_fail INTEGER NOT NULL DEFAULT 0,
-			last_roulette_fail INTEGER NOT NULL DEFAULT 0
+			last_roulette_fail INTEGER NOT NULL DEFAULT 0,
+			last_bank_deposit INTEGER NOT NULL DEFAULT 0,
 		);
 		CREATE TABLE IF NOT EXISTS inventory (
 			user_id TEXT PRIMARY KEY,
