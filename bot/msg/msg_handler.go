@@ -74,6 +74,9 @@ func handleMsgBotUsername(sess *discordgo.Session, msg *discordgo.MessageCreate)
 		"Let's dance, use `/dance`",
 		"You better go work, use `/work`",
 		"",
+		"IT'S!! TV!! TIME!!!",
+		"I LOVE TV",
+		"I'm groovy and never glooby",
 	}
 
 	handleMsgReplyRandVariant(sess, msg, variants)

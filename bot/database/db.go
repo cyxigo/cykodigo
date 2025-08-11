@@ -34,7 +34,7 @@ func initDB(db *sql.DB, name string) bool {
 			last_bank_deposit INTEGER NOT NULL DEFAULT 0
 		);
 		CREATE TABLE IF NOT EXISTS inventory (
-			user_id TEXT PRIMARY KEY,
+			user_id TEXT NOT NULL,
 			item TEXT NOT NULL,
 			amount INTEGER NOT NULL DEFAULT 1
 		);
