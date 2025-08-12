@@ -36,7 +36,8 @@ func initDB(db *sql.DB, name string) bool {
 		CREATE TABLE IF NOT EXISTS inventory (
 			user_id TEXT NOT NULL,
 			item TEXT NOT NULL,
-			amount INTEGER NOT NULL DEFAULT 1
+			amount INTEGER NOT NULL DEFAULT 1,
+			UNIQUE(item)
 		);
 		CREATE TABLE IF NOT EXISTS effects (
 			user_id TEXT PRIMARY KEY,
