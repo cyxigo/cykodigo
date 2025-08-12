@@ -37,7 +37,7 @@ func initDB(db *sql.DB, name string) bool {
 			user_id TEXT NOT NULL,
 			item TEXT NOT NULL,
 			amount INTEGER NOT NULL DEFAULT 1,
-			UNIQUE(item)
+			UNIQUE(user_id, item)
 		);
 		CREATE TABLE IF NOT EXISTS effects (
 			user_id TEXT PRIMARY KEY,

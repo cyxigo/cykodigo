@@ -353,7 +353,7 @@ func txAddItem(sess *discordgo.Session, inter *discordgo.InteractionCreate, tx *
 		`
 		INSERT INTO inventory (user_id, item, amount) 
 		VALUES (?, ?, ?) 
-		ON CONFLICT(item) 
+		ON CONFLICT(user_id, item) 
 		DO UPDATE SET amount = amount + ?
 		`,
 		userID, item, amount, amount)
