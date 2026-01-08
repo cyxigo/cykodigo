@@ -269,7 +269,22 @@ func handleBalanceall(sess *discordgo.Session, inter *discordgo.InteractionCreat
 }
 
 func handleBank(sess *discordgo.Session, inter *discordgo.InteractionCreate) {
-	respond(sess, inter, "Work in progress!!! "+data.EmojiCykodigo, nil)
+	db, ok := database.GetDB(inter.GuildID)
+
+	if !ok {
+		return
+	}
+
+	target, ok := getOptionalTarget(sess, inter)
+
+	if !ok {
+		return
+	}
+
+	balance := database.GetUserBankBalance(db, target.ID)
+	content := fmt.Sprintf("%v's bank balance: **%v** money %v", target.Mention(), balance, data.EmojiCykodigo)
+
+	respond(sess, inter, content, nil)
 }
 
 func handleShop(sess *discordgo.Session, inter *discordgo.InteractionCreate) {

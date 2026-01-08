@@ -28,13 +28,13 @@ func GetUserBankBalance(db *sql.DB, userID string) int64 {
 	balance := int64(0)
 	err := db.QueryRow(
 		`
-		SELECT balance
+		SELECT bank
 		FROM balances 
 		WHERE user_id = ?
 		`, userID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Query error in getUserBalance: %v", err)
+		log.Printf("Query error in getUserBankBalance: %v", err)
 	}
 
 	return balance

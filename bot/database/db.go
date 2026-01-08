@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // maps guild IDs to database connections
@@ -72,7 +72,7 @@ func GetDB(guildID string) (*sql.DB, bool) {
 	}
 
 	dbPath := filepath.Join(dbDir, guildID+".db")
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 
 	if err != nil {
 		log.Printf("Failed to open database for guild '%v': %v", guildID, err)

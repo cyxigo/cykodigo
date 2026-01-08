@@ -17,7 +17,7 @@ func TxGetUserBalance(tx *sql.Tx, userID string) int64 {
 		`, userID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Query error in getUserBalance: %v", err)
+		log.Printf("Query error in TxGetUserBalance: %v", err)
 	}
 
 	return balance
@@ -34,7 +34,7 @@ func TxGetUserBankBalance(tx *sql.Tx, userID string) int64 {
 		`, userID).Scan(&balance)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Query error in getUserBalance: %v", err)
+		log.Printf("Query error in TxGetUserBankBalance: %v", err)
 	}
 
 	return balance
