@@ -25,6 +25,13 @@ func WakeUp() {
 		log.Fatalf("Can't create session: %v", err)
 	}
 
+	dialer, httpClient, ok := SetupProxy()
+
+	if ok {
+		sess.Client = httpClient
+		sess.Dialer = dialer
+	}
+
 	sess.StateEnabled = true
 
 	sess.AddHandler(inter.InterHandler)
