@@ -73,7 +73,7 @@ func SetupProxy() (*websocket.Dialer, *http.Client, bool) {
 		return nil, nil, false
 	}
 
-	fmt.Printf("Using proxy: %s\n", proxyURL.Redacted())
+	log.Printf("Using proxy: %v\n", proxyURL.Redacted())
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
