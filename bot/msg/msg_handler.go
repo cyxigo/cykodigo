@@ -39,21 +39,7 @@ func handleMsgBotUsername(sess *discordgo.Session, msg *discordgo.MessageCreate)
 		"Never gonna give you up, never gonna let you down\nNever gonna run around and desert you\n" +
 			"Never gonna make you cry, never gonna say goodbye\nNever gonna tell a lie and hurt you",
 		"Look, whatever you selling, I'm not buying yo.",
-		"WHY BE THE [[Little Sponge]] WHO HATES ITS [[$4.99]] LIFE\n" +
-			"WHEN YOU CAN BE A\n" +
-			"[[BIG SHOT!!!]]\n" +
-			"[[BIG SHOT!!!!]]\n" +
-			"[[BIG SHOT!!!!!]]\n" +
-			"THAT'S RIGHT!! NOW'S YOUR CHANCE TO BE A [[BIG SHOT]]!!",
 		"[[Hyperlink Blocked]]",
-		"I'm a [[BIG SHOT]]!",
-		"I'LL SHOW YOU WHAT IT MEANS TO BE FREE!",
-		"I CAN DO ANYTHING!",
-		"CHAOS, CHAOS!",
-		"DO YOU WANT TO PLAY GAME, GAME?",
-		"UEE HEE HEE",
-		"I'm old!",
-		"Freedom...",
 		"True",
 		"False",
 		"Wow",
@@ -71,12 +57,7 @@ func handleMsgBotUsername(sess *discordgo.Session, msg *discordgo.MessageCreate)
 		"Hm?",
 		"Shhhhhhhhhhhhhhhh",
 		"Grrrrrrrrrrrrrrrr",
-		"Let's dance, use `/dance`",
-		"You better go work, use `/work`",
 		"",
-		"IT'S!! TV!! TIME!!!",
-		"I LOVE TV",
-		"I'm groovy and never glooby",
 	}
 
 	handleMsgReplyRandVariant(sess, msg, variants)
